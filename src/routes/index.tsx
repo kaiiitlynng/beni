@@ -1,23 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-// The home route ships no og:image, so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { ArrowUpRight, FileText, Sparkles, MessageCircle, ArrowRight } from 'lucide-react';
+import { Shell } from '@/components/beni/shell';
+import { Phone } from '@/components/beni/phone';
+import { Button } from '@/components/ui/button';
+import campus from '@/assets/campus-life.jpg';
+import { pageHead } from '@/lib/beni';
+export const Route = createFileRoute('/')({ head:()=>pageHead('better care. already covered.', 'Your insurance has more to offer. Discover your benefits and stay on top of care with beni, your text-first insurance assistant.'), component:Index });
+function Index(){ return <Shell publicPage><section className="hero"><img src={campus} className="hero-image" alt="Friends enjoying a quiet afternoon on campus" width={1600} height={1024}/><div className="page-width hero-inner fade-in"><p className="text-xs uppercase tracking-[0.17em] text-muted-foreground mb-7 flex items-center gap-2"><span className="size-1.5 rounded-full bg-muted-foreground"/> your benefits. your life.</p><h1>better care.<br/><em>already covered.</em></h1><p className="hero-copy text-foreground/80">your insurance has more to offer.<br/>beni helps you discover it, use it,<br/>and stay on top of your care.</p><Button asChild variant="hero" size="lg" className="mt-8"><Link to="/onboarding">discover my benefits <ArrowUpRight className="ml-5"/></Link></Button><p className="text-xs text-muted-foreground mt-4">less guesswork. more getting on with life.</p><Phone/></div></section><section id="how-it-works" className="page-width py-16 md:py-20"><div className="flex flex-wrap items-end justify-between gap-5 mb-12"><h2 className="section-title">insurance, <em>humanized.</em></h2><p className="text-sm text-muted-foreground max-w-64 leading-6">from “am i covered?” to “i’ve got this.”<br/>a little help goes a long way.</p></div><div className="grid md:grid-cols-3 gap-8 md:gap-12">{[{n:'01',icon:FileText,title:'understand your coverage',copy:"upload your insurance and discover what’s included."},{n:'02',icon:Sparkles,title:'uncover hidden perks',copy:"find benefits you didn’t even know you had."},{n:'03',icon:MessageCircle,title:'care, just a text away',copy:'your personal healthcare assistant, always one message away.'}].map(f=><div key={f.n} className="border-t border-border pt-6"><div className="flex justify-between text-muted-foreground mb-8"><span className="text-xs">{f.n}</span><f.icon size={22} strokeWidth={1.25}/></div><h3 className="text-3xl mb-3">{f.title}</h3><p className="text-sm text-muted-foreground leading-6 max-w-72">{f.copy}</p></div>)}</div></section><section className="bg-secondary py-16 md:py-20"><div className="page-width flex flex-wrap items-center justify-between gap-8"><div><p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-5">a little nudge toward you</p><h2 className="section-title">care that fits<br/><em>the life you’re living.</em></h2></div><div className="max-w-sm"><p className="text-muted-foreground text-sm leading-7 mb-7">between classes, trips home, and everything else, your health deserves a spot on the calendar. beni helps you make one.</p><Button asChild variant="outline" size="lg"><Link to="/onboarding">let’s get you covered <ArrowRight/></Link></Button></div></div></section></Shell> }
