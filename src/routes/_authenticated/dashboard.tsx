@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { hubQuery } from '@/lib/hub-query';
 import { pageHead, confirmedUsage } from '@/lib/beni';
 import { greeting, fmtDate, isHold } from '@/lib/hub';
+import { CalendarConnection } from '@/components/beni/calendar-connection';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   head: () => pageHead('your care, all in one place', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
@@ -70,12 +71,7 @@ function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col items-start gap-2">
-            <Button asChild>
-              <Link to="/calendar">
-                connect google calendar <ArrowUpRight />
-              </Link>
-            </Button>
-            <p className="text-xs text-muted-foreground">not connected yet — setup continues on your calendar page.</p>
+            <CalendarConnection />
           </div>
         </section>
 

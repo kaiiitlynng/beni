@@ -20,11 +20,11 @@ function ActivityPage() {
   const { data } = useSuspenseQuery(hubQuery);
 
   const items: Item[] = [
-    ...data.messages.map((m) => ({
+    ...data.realMessages.map((m) => ({
       key: `m-${m.id}`,
       at: m.created_at,
       icon: <MessageCircle size={16} />,
-      label: m.direction === 'outbound' ? 'beni messaged you' : 'you replied',
+      label: m.direction === 'outbound' ? `beni message · ${m.delivery_status}` : `you replied · ${m.reply_status}`,
       text: m.body,
     })),
     ...data.reminders.map((r) => ({
@@ -59,7 +59,7 @@ function ActivityPage() {
     })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 
-  const conversation = data.messages.slice(-6);
+  const conversation = data.realMessages.slice(-6);
 
   return (
     <AuthedShell>

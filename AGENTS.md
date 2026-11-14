@@ -33,3 +33,6 @@ use the editor.
 - Use authenticated TanStack route children for private onboarding, dashboard, settings and demo; public pages remain SSR-safe because browser sessions cannot be read by SSR.
 - Keep profile/plan persistence in owner-scoped Cloud tables and private Storage; benefits are read-only to clients so coverage cannot be fabricated by browser writes.
 - Phase-one demo stores explicitly demo-channel messages without real SMS delivery; external messaging and document intelligence are separate subsequent phases.
+- Keep per-user Google credentials encrypted server-side and exchange one-time OAuth codes only in the authenticated opener; never expose provider credentials to browser code.
+- Use signed public TanStack endpoints and durable Cloud queues for Linq replies and reminders; require consent, verified phone routing, and idempotent outbound attempts before sending.
+- Keep real Linq history separate from demo history so simulated messages never appear as actual phone deliveries.

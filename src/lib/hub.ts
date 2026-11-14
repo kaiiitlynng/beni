@@ -7,6 +7,7 @@ export type Hub = {
   visits: Tables<'visits'>[];
   events: Tables<'calendar_events'>[];
   messages: Tables<'messages'>[];
+  realMessages: Tables<'linq_messages'>[];
   reminders: Tables<'reminders'>[];
   messagingConnected: boolean;
 };
