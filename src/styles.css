@@ -30,6 +30,11 @@
  */
 
 @theme inline {
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Instrument Serif", serif;
+  --color-message: var(--message);
+  --color-message-foreground: var(--message-foreground);
+  --color-message-sent: var(--message-sent);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -73,26 +78,30 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --radius: 1rem;
+  --background: oklch(0.294 0.032 151);
+  --foreground: oklch(0.984 0.038 107);
+  --card: oklch(0.345 0.038 151);
+  --card-foreground: var(--foreground);
+  --popover: var(--background);
+  --popover-foreground: var(--foreground);
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --secondary: oklch(0.255 0.024 148);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--card);
+  --muted-foreground: oklch(0.733 0.029 119);
+  --accent: oklch(0.405 0.04 149);
+  --accent-foreground: var(--foreground);
+  --message: oklch(0.932 0.006 110);
+  --message-foreground: oklch(0.26 0.018 148);
+  --message-sent: oklch(0.56 0.16 249);
+  --hero-shade: linear-gradient(90deg, oklch(0.255 0.024 148 / 98%) 0%, oklch(0.255 0.024 148 / 87%) 38%, oklch(0.255 0.024 148 / 35%) 100%);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.425 0.033 151);
+  --input: var(--border);
+  --ring: var(--muted-foreground);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -151,5 +160,46 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    letter-spacing: 0;
   }
 }
+
+h1,h2,h3,.editorial { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; }
+button,a,input { -webkit-tap-highlight-color: transparent; }
+.wordmark { font-family: var(--font-display); font-size: 48px; line-height: 1; font-weight: 400; }
+.page-width { width: min(1240px, calc(100% - 96px)); margin-inline: auto; }
+.hero { position: relative; isolation: isolate; min-height: 740px; overflow: hidden; }
+.hero-image { position: absolute; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--hero-shade); }
+.hero-inner { padding-top: 90px; padding-bottom: 94px; position: relative; }
+.hero h1 { font-size: 110px; line-height: .98; max-width: 750px; }
+.hero h1 em { color: var(--muted-foreground); }
+.hero-copy { font-size: 17px; line-height: 1.8; max-width: 360px; margin-top: 28px; }
+.phone { background: var(--foreground); color: var(--message-foreground); width: 304px; border: 7px solid var(--secondary); border-radius: 38px; padding: 12px 16px 24px; transform: rotate(5deg); position: absolute; top: 86px; right: 22px; box-shadow: 0 24px 70px oklch(0.15 0.02 150 / 25%); }
+.phone-notch { width: 86px; height: 23px; border-radius: 20px; background: var(--secondary); }
+.phone-header { border-bottom: 1px solid color-mix(in oklch,var(--message-foreground) 12%,transparent); padding: 12px 0; text-align: center; }
+.phone-avatar { width: 42px; height: 42px; background: var(--background); color: var(--foreground); border-radius: 50%; margin: auto; display: grid; place-items: center; font-family: var(--font-display); font-size: 27px; }
+.bubble { background: var(--message); color: var(--message-foreground); border-radius: 15px 15px 15px 4px; padding: 12px 13px; font-size: 12px; line-height: 1.55; max-width: 91%; }
+.bubble-sent { background: var(--message-sent); color: var(--foreground); border-radius: 15px 15px 4px 15px; margin-left: auto; }
+.section-title { font-size: 58px; line-height: 1.08; }
+.field { display: grid; gap: 9px; font-size: 13px; color: var(--muted-foreground); }
+.field input,.field select { height: 48px; color: var(--foreground); }
+.field select { background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; }
+.interest { border-radius: 999px; }
+.fade-in { animation: arrive .7s ease both; }
+@keyframes arrive { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1000px) { .hero h1 { font-size: 84px; max-width: 590px; } .phone { width: 270px; right: 0; } }
+@media (max-width: 760px) {
+ .page-width { width: calc(100% - 40px); }
+ .wordmark { font-size: 41px; }
+ .hero { min-height: 0; }
+ .hero-inner { padding-top: 48px; padding-bottom: 48px; }
+ .hero h1 { font-size: 65px; }
+ .hero-copy { font-size: 15px; max-width: 300px; }
+ .hero-image { object-position: 65% center; }
+ .hero::before { background: oklch(0.255 0.024 148 / 84%); }
+ .phone { position: relative; top: auto; right: auto; margin: 55px auto 12px; width: 274px; transform: rotate(3deg); }
+ .section-title { font-size: 43px; }
+}
+@media(prefers-reduced-motion: reduce) { .fade-in { animation: none; } * { scroll-behavior: auto !important; } }
