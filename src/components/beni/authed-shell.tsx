@@ -70,7 +70,7 @@ export function AuthedShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <main className="flex-1 min-w-0 pt-14 md:pt-0 pb-20 md:pb-0">{children}</main>
+      <div className="flex-1 min-w-0 pt-14 md:pt-0 pb-20 md:pb-0">{children}</div>
 
       {/* Mobile bottom nav */}
       <nav
