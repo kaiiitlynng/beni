@@ -51,7 +51,7 @@ function CarePage() {
   return (
     <AuthedShell>
       <main className="page-width py-12 md:py-16">
-        <p className="text-xs text-muted-foreground mb-4">planned, completed, and everything in between.</p>
+        
         <h1 className="section-title">your care, all in one place.</h1>
 
         {/* Upcoming */}

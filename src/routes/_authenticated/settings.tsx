@@ -1,3 +1,4 @@
+import { fmtDate } from '@/lib/hub';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
@@ -199,8 +200,8 @@ function Settings() {
                     <div>
                       <p className="text-sm">{plan.file_name}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {plan.status === 'uploaded' ? 'awaiting benefit extraction' : plan.status} · uploaded {new Date(plan.created_at).toLocaleDateString()}
-                        {plan.effective_start ? ` · effective ${plan.effective_start}${plan.effective_end ? ` – ${plan.effective_end}` : ''}` : ''}
+                        {plan.status === 'uploaded' ? 'awaiting benefit extraction' : plan.status} · uploaded {fmtDate(plan.created_at)}
+                        {plan.effective_start ? ` · effective ${fmtDate(plan.effective_start)}${plan.effective_end ? ` – ${fmtDate(plan.effective_end)}` : ''}` : ''}
                       </p>
                     </div>
                     <FileText size={18} className="text-muted-foreground" />

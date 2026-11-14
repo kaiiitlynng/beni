@@ -31,4 +31,12 @@ describe('shared Google Calendar transport', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', {status: 403})));
     expect((await readGoogleSchedule()).connected).toBe(false);
   });
+  it('rejects a connector for a different Google account before reading its events', async () => {
+    vi.stubEnv('GOOGLE_CALENDAR_API_KEY', 'test-connector');
+    vi.stubEnv('LOVABLE_API_KEY', 'test-app');
+    const fetcher=vi.fn().mockResolvedValue(Response.json({items:[{id:'other@example.com',primary:true}]}));
+    vi.stubGlobal('fetch',fetcher);
+    expect((await readGoogleSchedule()).connected).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });

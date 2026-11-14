@@ -91,7 +91,7 @@ function BenefitsPage() {
   return (
     <AuthedShell>
       <main className="page-width py-12 md:py-16">
-        <p className="text-xs text-muted-foreground mb-4">documented in your plan. never invented.</p>
+        
         <h1 className="section-title">everything you’re covered for.</h1>
 
         <div className="flex flex-wrap gap-4 items-center mt-10 mb-6">

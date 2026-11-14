@@ -1,4 +1,5 @@
 import type { Tables } from '@/integrations/supabase/types';
+import { toKey } from './calendar';
 
 export type Hub = {
   profile: Tables<'profiles'> | null;
@@ -32,7 +33,7 @@ export function isBooked(event: Pick<Tables<'calendar_events'>, 'status' | 'user
 }
 
 export function eventDay(event: Pick<Tables<'calendar_events'>, 'starts_at'>): string {
-  return event.starts_at.slice(0, 10);
+  return toKey(new Date(event.starts_at));
 }
 
 export function greeting(firstName: string | undefined): string {
@@ -42,9 +43,9 @@ export function greeting(firstName: string | undefined): string {
 }
 
 export function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  return new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }

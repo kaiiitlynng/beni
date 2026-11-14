@@ -2,11 +2,16 @@ import {createServerFn} from '@tanstack/react-start';
 import {requireSupabaseAuth} from '@/integrations/supabase/auth-middleware';
 import {z} from 'zod';
 import {approvedGoogleExport} from './google-calendar-rules';
+import { canAccessLinkedCalendar } from './calendar-access';
 
-export const getGoogleCalendar=createServerFn({method:'GET'}).middleware([requireSupabaseAuth]).handler(async()=>{
-  return (await import('./google-calendar.server')).readGoogleSchedule();
+export const getGoogleCalendar=createServerFn({method:'GET'}).middleware([requireSupabaseAuth]).inputValidator(z.object({start:z.string().datetime(),end:z.string().datetime()}).refine(d => Date.parse(d.end) > Date.parse(d.start) && Date.parse(d.end) - Date.parse(d.start) <= 43 * 86400000, 'Choose a calendar range of at most 43 days.').optional()).handler(async({context,data})=>{
+  const {data:auth,error}=await context.supabase.auth.getUser();
+  if(error || !canAccessLinkedCalendar(auth.user)) return {connected:false,reconnectRequired:false,authorized:false,events:[],busy:[],availability:[],error:null};
+  return { ...(await (await import('./google-calendar.server')).readGoogleSchedule(data)), authorized:true };
 });
 export const exportAppointment=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),approved:z.literal(true)})).handler(async({context,data})=>{
+  const {data:auth,error:authError}=await context.supabase.auth.getUser();
+  if(authError || !canAccessLinkedCalendar(auth.user)) throw new Error('This Google Calendar connection is private to its verified owner.');
   const {data:event,error}=await context.supabase.from('calendar_events').select('*').eq('id',data.id).eq('user_id',context.userId).maybeSingle();
   if(error||!event||!approvedGoogleExport(event,data.approved)) throw new Error('Confirm this Beni appointment and explicitly approve adding it to Google first.');
   const {googleCall}=await import('./google-calendar.server');

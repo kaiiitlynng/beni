@@ -51,24 +51,24 @@ function Dashboard() {
   if (data.profile?.break_start && suggestions.length < 3) {
     suggestions.push({
       title: 'your break is a good window for care.',
-      why: `you told beni you’re off ${data.profile.break_start} – ${data.profile.break_end ?? ''}. a calm time for appointments.`,
+      why: `you told beni you’re off ${fmtDate(data.profile.break_start)} – ${data.profile.break_end ? fmtDate(data.profile.break_end) : ''}. a calm time for appointments.`,
     });
   }
 
   return (
     <AuthedShell>
       <main className="page-width py-12 md:py-16">
-        <p className="text-xs text-muted-foreground mb-4">a little clarity goes a long way.</p>
+        
         <h1 className="section-title">{greeting(data.profile?.first_name)}</h1>
-        <p className="text-muted-foreground mt-4 text-sm">let’s make the most of your care.</p>
+        
 
         {/* Calendar connection card */}
         <section className="mt-10 border border-border bg-card rounded-2xl p-6 md:p-8 flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-start gap-4">
             <CalendarDays size={26} className="text-muted-foreground shrink-0 mt-1" />
             <div>
-              <h2 className="text-3xl">connect your calendar.</h2>
-              <p className="text-sm text-muted-foreground mt-2 max-w-md">let beni work around your schedule.</p>
+              <h2 className="text-3xl">my calendar.</h2>
+              <p className="text-sm text-muted-foreground mt-2 max-w-md">View your schedule and appointment holds.</p>
             </div>
           </div>
           <CalendarConnection />
@@ -84,9 +84,9 @@ function Dashboard() {
             <>
               <p className="text-sm text-muted-foreground">
                 {plan.file_name} · {plan.status === 'uploaded' ? 'awaiting benefit extraction' : plan.status}
-                {plan.effective_start ? ` · effective ${plan.effective_start}${plan.effective_end ? ` – ${plan.effective_end}` : ''}` : ''}
+                {plan.effective_start ? ` · effective ${fmtDate(plan.effective_start)}${plan.effective_end ? ` – ${fmtDate(plan.effective_end)}` : ''}` : ''}
               </p>
-              <p className="text-xs text-muted-foreground mt-3">last updated {new Date(plan.updated_at).toLocaleDateString()} · {data.benefits.length} documented benefits</p>
+              <p className="text-xs text-muted-foreground mt-3">last updated {fmtDate(plan.updated_at)} · {data.benefits.length} documented benefits</p>
               <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-6 mt-6">
                 {[
                   ['provider', plan.provider],
