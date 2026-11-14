@@ -33,7 +33,7 @@ function CalendarPage(){
     ...(google.data?.events??[]).filter(e=>!data.events.some(b=>b.google_event_id&&e.id.endsWith(`:${b.google_event_id}`))).map(e=>({...e,type:'google' as const})),
     ...data.events.map(e=>({id:e.id,title:e.title,start:e.starts_at,end:e.ends_at??new Date(Date.parse(e.starts_at)+3600000).toISOString(),type:isHold(e)?'hold' as const:'confirmed' as const,location:e.location,notes:e.notes})),
   ],[google.data,data.events]);
-  const busyIntervals=useMemo(()=>[...(google.data?.busy??[]),...entries.filter(e=>e.type!=='google').map(entryInterval)],[google.data,entries]);
+  const busyIntervals=useMemo(()=>[...(google.data?.busy??[]),...entries.map(entryInterval)],[google.data,entries]);
   const availability=new Map(days.map(d=>[toKey(d),google.data?.connected?dailyAvailability(d,busyIntervals,from,to):[]]));
   const selectedDate=new Date(`${selected}T12:00:00`);
   const selectedSlots=google.data?.connected?dailyAvailability(selectedDate,busyIntervals,from,to):[];
