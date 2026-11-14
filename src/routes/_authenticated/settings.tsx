@@ -13,6 +13,7 @@ import { pageHead } from '@/lib/beni';
 import { toast } from 'sonner';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import {CalendarConnection} from '@/components/beni/calendar-connection';
+import { editableProfileUpdate } from '@/lib/profile-updates';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => pageHead('your preferences', 'Manage your personal information, notifications, documents, connections and privacy.'),
@@ -66,7 +67,7 @@ function Settings() {
 
   async function save(fields: TablesUpdate<'profiles'>, ok: string) {
     setBusy(true);
-    const { error } = await supabase.from('profiles').update(fields).eq('id', p?.id ?? '');
+    const { error } = await supabase.from('profiles').update(editableProfileUpdate(fields)).eq('id', p?.id ?? '');
     setBusy(false);
     if (error) toast.error(error.message);
     else {

@@ -32,6 +32,7 @@ use the editor.
 ## Application architecture
 - Use authenticated TanStack route children for private onboarding, dashboard, settings and demo; public pages remain SSR-safe because browser sessions cannot be read by SSR.
 - Keep profile/plan persistence in owner-scoped Cloud tables and private Storage; benefits are read-only to clients so coverage cannot be fabricated by browser writes.
+- Filter every browser profile update through the editable-field allowlist; loaded rows include protected identity fields that must never be resubmitted or granted client write access.
 - Phase-one demo stores explicitly demo-channel messages without real SMS delivery; external messaging and document intelligence are separate subsequent phases.
 
 ## Backend integration (Claude + Linq)
