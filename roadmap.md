@@ -19,3 +19,9 @@
 - [x] Rule tests: hold ≠ booked, consent gating, coverage indicators
 
 Subsequent requested phases: AI document extraction, Linq authenticated webhook and outbound messaging, Google Calendar connection (Composio or App User Connector), same-agent demo fallback, and appointment assistance. These are not enabled in the foundation.
+
+# real integrations
+- [ ] Secure per-user Google Calendar consent, upcoming events, availability and approved event export
+- [ ] Linq secret setup, consent-gated test message and real appointment reminders
+- [ ] Signed Linq reply webhook, private history and AI responses
+- [ ] Verify real integrations and document credential/setup blockers
