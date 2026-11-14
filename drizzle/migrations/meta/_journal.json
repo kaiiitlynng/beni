@@ -22,6 +22,13 @@
       "when": 1794696533640,
       "tag": "0002_insurance_plan_review_and_activation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794697193756,
+      "tag": "0003_google_calendar_confirmed_approval",
+      "breakpoints": true
     }
   ]
 }
