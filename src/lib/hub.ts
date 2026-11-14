@@ -9,6 +9,8 @@ export type Hub = {
   messages: Tables<'messages'>[];
   reminders: Tables<'reminders'>[];
   messagingConnected: boolean;
+  /** beni's Linq number, when messaging is configured. */
+  beniNumber?: string | null;
 };
 
 export const CATEGORIES = ['all', 'medical', 'dental', 'vision', 'mental health', 'physical therapy', 'alternative care', 'dermatology', 'other'] as const;

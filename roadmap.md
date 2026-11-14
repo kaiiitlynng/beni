@@ -18,10 +18,22 @@
 - [x] Settings page: personal info, notifications, documents, connected accounts, privacy
 - [x] Rule tests: hold ≠ booked, consent gating, coverage indicators
 
-Subsequent requested phases: AI document extraction, Linq authenticated webhook and outbound messaging, Google Calendar connection (Composio or App User Connector), same-agent demo fallback, and appointment assistance. These are not enabled in the foundation.
+# insurance intelligence + text agent (Claude API, Linq v3)
+- [x] extract-plan: Claude reads the uploaded PDF; only page-cited benefits are stored (`src/lib/server/extract-plan.server.ts`)
+- [x] agent: one agent for Linq texts and the /demo web-chat fallback, grounded in stored plan data (`src/lib/server/agent.server.ts`)
+- [x] calendar holds and visit logs only after an explicit "yes" (`profiles.pending_action`)
+- [x] send-nudge: welcome, school break, unused benefit, appointment, post-visit check-in; consent and notification switches enforced
+- [x] linq-webhook: Standard Webhooks signature check, event de-duplication, STOP/START (`src/routes/api/linq-webhook.ts`)
+- [x] realtime refresh so changes made by text appear on the site
+- [ ] Lovable schema change applied (see AGENTS.md → Backend integration)
+- [ ] Secrets set: ANTHROPIC_API_KEY, LINQ_API_TOKEN, LINQ_FROM_NUMBER, LINQ_WEBHOOK_SECRET
+- [ ] Linq webhook subscription registered for `message.received`
+- [ ] End-to-end check with a public sample plan
 
 # real integrations
 - [ ] Secure per-user Google Calendar consent, upcoming events, availability and approved event export
-- [ ] Linq secret setup, consent-gated test message and real appointment reminders
-- [ ] Signed Linq reply webhook, private history and AI responses
+- [x] Linq consent-gated test message and appointment reminders — built in `src/lib/server/nudge.server.ts` (secrets still to set)
+- [x] Signed Linq reply webhook, private history and AI responses — built in `src/routes/api/linq-webhook.ts` + `src/lib/server/agent.server.ts`; extend these rather than adding a second webhook or agent
 - [ ] Verify real integrations and document credential/setup blockers
+
+Not started: provider search beyond the providers table.

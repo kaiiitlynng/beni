@@ -24,7 +24,7 @@ function ActivityPage() {
       key: `m-${m.id}`,
       at: m.created_at,
       icon: <MessageCircle size={16} />,
-      label: m.direction === 'outbound' ? 'beni messaged you' : 'you replied',
+      label: m.direction === 'outgoing' ? 'beni messaged you' : 'you replied',
       text: m.body,
     })),
     ...data.reminders.map((r) => ({
@@ -78,7 +78,7 @@ function ActivityPage() {
           {conversation.length ? (
             <div className="space-y-3">
               {conversation.map((m) => (
-                <p key={m.id} className={`text-sm rounded-2xl px-4 py-3 max-w-[85%] ${m.direction === 'outbound' ? 'bg-muted' : 'bg-accent ml-auto'}`}>
+                <p key={m.id} className={`text-sm rounded-2xl px-4 py-3 max-w-[85%] ${m.direction === 'outgoing' ? 'bg-muted' : 'bg-accent ml-auto'}`}>
                   {m.body}
                 </p>
               ))}
