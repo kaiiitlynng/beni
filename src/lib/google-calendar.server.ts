@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { callAsAppUser, appUserReconnectRequired } from '@/integrations/lovable/appUserConnector';
 import { getConnectionKeyForUser } from './appUserConnections.server';
 import { availableWindows } from './google-calendar-rules';
+import { googleCalendarFailure } from './google-calendar-errors';
 export const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/userinfo.profile','https://www.googleapis.com/auth/calendar.readonly','https://www.googleapis.com/auth/calendar.events'];
 export class CalendarReconnect extends Error {}
 export async function googleCall(userId: string, path: string, init?: RequestInit) {
@@ -9,6 +10,12 @@ export async function googleCall(userId: string, path: string, init?: RequestIni
   if (!connectionAPIKey) throw new Error('Connect your Google Calendar first.');
   const res = await callAsAppUser({ gatewayBaseUrl:'https://connector-gateway.lovable.dev', connectionAPIKey, connectorId:'google_calendar', path:`/calendar/v3${path}`, requiredScopes:GOOGLE_SCOPES, ...(init ? {init}: {}) });
   if (await appUserReconnectRequired(res)) throw new CalendarReconnect('Your Google access needs to be renewed.');
+  if (!res.ok && !(res.status === 409 && init?.method === 'POST')) {
+    const rawBody = await res.clone().text();
+    const failure = googleCalendarFailure(res.status, rawBody);
+    console.error('[google-calendar] Provider request failed', { path, status: res.status, cause: failure.cause, body: rawBody });
+    throw new Error(failure.message);
+  }
   return res;
 }
 const calendarSchema = z.object({ items: z.array(z.object({ id:z.string(), summary:z.string().optional(), accessRole:z.string().optional(), timeZone:z.string().optional() })).default([]) });
