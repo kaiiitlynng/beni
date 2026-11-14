@@ -12,6 +12,10 @@ import { eventDay, fmtTime, isHold, isBooked } from '@/lib/hub';
 import { createHold, confirmHold, deleteEvent } from '@/lib/benefits.functions';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
+import { CalendarConnection } from '@/components/beni/calendar-connection';
+import { GoogleSchedule } from '@/components/beni/google-schedule';
+import { exportAppointment } from '@/lib/calendar-integration.functions';
+import { useServerFn } from '@tanstack/react-start';
 
 export const Route = createFileRoute('/_authenticated/calendar')({
   head: () => pageHead('care that fits your life', 'Your schedule, your benefits, beautifully coordinated.'),
@@ -36,6 +40,7 @@ function markerFor(e: Tables<'calendar_events'>) {
 function CalendarPage() {
   const { data } = useSuspenseQuery(hubQuery);
   const qc = useQueryClient();
+  const exportToGoogle = useServerFn(exportAppointment);
   const [view, setView] = useState<View>('month');
   const [anchor, setAnchor] = useState(() => new Date());
   const [selected, setSelected] = useState(() => toKey(new Date()));
@@ -106,12 +111,10 @@ function CalendarPage() {
             <CalendarDays size={20} className="text-muted-foreground" />
             <div>
               <p className="text-sm">connect your google calendar</p>
-              <p className="text-xs text-muted-foreground">not connected · demo calendar mode — your holds and entries below are saved to beni only.</p>
+              <p className="text-xs text-muted-foreground">approve an entry before adding it to Google. A calendar entry is not a provider booking.</p>
             </div>
           </div>
-          <Button variant="outline" disabled title="Google Calendar connection is not configured yet">
-            connect calendar ↗
-          </Button>
+          <CalendarConnection />
         </section>
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-10 mt-10">
@@ -215,6 +218,7 @@ function CalendarPage() {
                           <Check size={14} /> confirm
                         </Button>
                       )}
+                      {isBooked(e) && <Button size="sm" variant="outline" disabled={busy || !!e.google_event_id} onClick={async()=>{setBusy(true);try{await exportToGoogle({data:{id:e.id}});toast.success('Added to Google Calendar — not a provider booking.');await refresh();}catch(error){toast.error(error instanceof Error?error.message:'Google export failed.');}finally{setBusy(false);}}}>{e.google_event_id?'added to google':'add to google'}</Button>}
                       <Button size="sm" variant="ghost" disabled={busy} aria-label={`Remove ${e.title}`} onClick={() => onDelete(e.id)}>
                         <X size={14} />
                       </Button>
@@ -228,6 +232,7 @@ function CalendarPage() {
                 <Plus size={15} /> add calendar hold
               </Button>
             </section>
+            <GoogleSchedule anchor={anchor} />
           </div>
 
           {/* Beni assistant panel */}
@@ -245,13 +250,13 @@ function CalendarPage() {
                 <Plus size={15} /> add calendar hold
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/demo">
-                  <MessageCircle size={15} /> text beni
+                <Link to="/settings">
+                  <MessageCircle size={15} /> messaging settings
                 </Link>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-5 leading-5">
-              texting lives in the demo until messaging is connected. beni never books appointments — it suggests, you confirm.
+              real texting requires your opt-in and a verified phone. beni never books providers — calendar entries remain separate.
             </p>
           </aside>
         </div>

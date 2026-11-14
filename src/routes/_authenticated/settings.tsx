@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { User, Bell, FileText, Plug, ShieldCheck, CalendarDays, MessageCircle } from 'lucide-react';
 import { AuthedShell } from '@/components/beni/authed-shell';
-import { PersonalFields, type ProfileFields } from '@/components/beni/profile-form';
+import { PersonalFields, profileInput, type ProfileFields } from '@/components/beni/profile-form';
 import { Preferences } from '@/components/beni/preferences';
 import { Upload } from '@/components/beni/upload';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { hubQuery } from '@/lib/hub-query';
 import { pageHead } from '@/lib/beni';
 import { toast } from 'sonner';
 import type { TablesUpdate } from '@/integrations/supabase/types';
+import { CalendarConnection } from '@/components/beni/calendar-connection';
+import { LinqConnection } from '@/components/beni/linq-connection';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => pageHead('your preferences', 'Manage your personal information, notifications, documents, connections and privacy.'),
@@ -50,7 +52,7 @@ function Settings() {
 
   const p = data.profile;
   const [profile, setProfile] = useState<ProfileFields>(
-    p ?? { first_name: '', phone: '', organization: '', current_city: '', home_city: '', sms_consent: false, break_start: null, break_end: null, availability: '', interests: [], reminder_preferences: [] },
+    p ? profileInput(p) : { first_name: '', phone: '', organization: '', current_city: '', home_city: '', sms_consent: false, break_start: null, break_end: null, availability: '', interests: [], reminder_preferences: [] },
   );
   const [notify, setNotify] = useState<NotifyFields>({
     notify_sms: p?.notify_sms ?? true,
@@ -222,24 +224,18 @@ function Settings() {
                 <CalendarDays size={20} className="text-muted-foreground" />
                 <div>
                   <p className="text-sm">google calendar</p>
-                  <p className="text-xs text-muted-foreground mt-1">not connected · connection setup is not configured yet</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" disabled title="Google Calendar connection is not configured yet">
-                connect ↗
-              </Button>
+              <CalendarConnection />
             </div>
             <div className="border border-border rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <MessageCircle size={20} className="text-muted-foreground" />
                 <div>
                   <p className="text-sm">text messaging (linq)</p>
-                  <p className="text-xs text-muted-foreground mt-1">not connected · messaging setup pending</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/demo">open demo</Link>
-              </Button>
+              <LinqConnection />
             </div>
           </section>
         )}
