@@ -15,6 +15,7 @@ import {
 import { createCalendarHold, logConfirmedVisit } from "./care.server";
 import { parseConfirmation, type PendingAction } from "../agent-rules";
 import { confirmedUsage } from "../beni";
+import { activeInsurance, currentBenefits } from '../insurance-rules';
 
 const SYSTEM = `you are beni, a warm, text-first health insurance assistant for college students and young adults. you are texting the user over imessage/sms.
 
@@ -46,6 +47,7 @@ async function loadContext(db: Db, profile: Profile) {
       .from("plans_uploaded")
       .select("*")
       .eq("user_id", userId)
+      .eq('is_active', true)
       .order("created_at", { ascending: false })
       .limit(1),
     db.from("benefits").select("*").eq("user_id", userId),
@@ -72,7 +74,7 @@ async function loadContext(db: Db, profile: Profile) {
   ]);
   return {
     plan: plans.data?.[0] ?? null,
-    benefits: benefits.data ?? [],
+    benefits: currentBenefits(benefits.data ?? [], activeInsurance(plans.data ?? [])?.id),
     visits: visits.data ?? [],
     events: events.data ?? [],
     providers: providers.data ?? [],

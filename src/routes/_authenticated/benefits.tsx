@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Search, FileText, ArrowLeft, Sparkles } from 'lucide-react';
@@ -9,6 +9,7 @@ import { hubQuery } from '@/lib/hub-query';
 import { pageHead, confirmedUsage } from '@/lib/beni';
 import { CATEGORIES, coverageTone } from '@/lib/hub';
 import type { Tables } from '@/integrations/supabase/types';
+import { activeInsurance } from '@/lib/insurance-rules';
 
 export const Route = createFileRoute('/_authenticated/benefits')({
   head: () => pageHead('everything you’re covered for', 'Browse, search and filter the benefits documented in your insurance plan.'),
@@ -28,7 +29,7 @@ function BenefitsPage() {
   const [category, setCategory] = useState<string>('all');
   const [perksOnly, setPerksOnly] = useState(false);
   const [selected, setSelected] = useState<Tables<'benefits'> | null>(null);
-  const plan = data.plans[0];
+  const plan = activeInsurance(data.plans);
 
   const filtered = data.benefits.filter((b) => {
     if (perksOnly && !b.hidden_perk) return false;
@@ -59,7 +60,7 @@ function BenefitsPage() {
               <p className="text-sm">{selected.visit_limit ? `${selected.visit_limit} visits` : 'no documented visit limit'}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-2">used so far</p>
+              <p className="text-xs text-muted-foreground mb-2">user-recorded usage · not insurer claims</p>
               <p className="text-sm">
                 {used} confirmed {used === 1 ? 'visit' : 'visits'}
                 {selected.visit_limit ? ` · ${Math.max(selected.visit_limit - used, 0)} remaining` : ''}
@@ -79,7 +80,9 @@ function BenefitsPage() {
               <p className="text-sm leading-6">{selected.restrictions}</p>
             </div>
           )}
-          <p className="text-xs text-muted-foreground mt-10">coverage details come from your uploaded document. beni never guesses.</p>
+          {selected.hidden_perk && <p className="text-sm mt-8">worth exploring: your document covers this often-overlooked benefit · page {selected.source_page}.</p>}
+          {selected.coverage_status === 'covered' && <Button asChild className="mt-6"><Link to="/calendar">plan an appointment</Link></Button>}
+          <p className="text-xs text-muted-foreground mt-10">coverage details come from your uploaded document. usage is recorded by you, not verified with your insurer.</p>
         </main>
       </AuthedShell>
     );
@@ -144,9 +147,10 @@ function BenefitsPage() {
                 {data.benefits.length
                   ? 'try another search, category, or clear the hidden perks filter.'
                   : plan
-                    ? 'your PDF is saved. documented coverage will appear here once extraction is connected.'
-                    : 'upload an insurance PDF from settings to start uncovering what’s included.'}
+                    ? 'no benefits were documented in this plan. review your source PDF or upload a more detailed document.'
+                    : 'upload and confirm an insurance plan to see its documented benefits.'}
               </p>
+              <Button asChild variant="outline" className="mt-4"><Link to="/insurance">my insurance</Link></Button>
             </div>
           </div>
         )}

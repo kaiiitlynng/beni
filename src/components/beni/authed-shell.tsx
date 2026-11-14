@@ -1,11 +1,12 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
-import { Home, HeartHandshake, CalendarDays, Stethoscope, Activity, Settings, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Home, HeartHandshake, CalendarDays, Stethoscope, Activity, Settings, FileText, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Brand } from './shell';
 
 const NAV = [
   { to: '/dashboard', label: 'home', icon: Home },
+  { to: '/insurance', label: 'my insurance', icon: FileText },
   { to: '/benefits', label: 'my benefits', icon: HeartHandshake },
   { to: '/calendar', label: 'my calendar', icon: CalendarDays },
   { to: '/care', label: 'my care', icon: Stethoscope },
@@ -74,7 +75,7 @@ export function AuthedShell({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom nav */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border/60 flex justify-around py-2"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border/60 grid grid-cols-7 py-2"
         aria-label="Main navigation"
       >
         {NAV.map(({ to, label, icon: Icon }) => (
@@ -83,7 +84,7 @@ export function AuthedShell({ children }: { children: ReactNode }) {
             to={to}
             aria-label={label}
             aria-current={isActive(to) ? 'page' : undefined}
-            className={`flex flex-col items-center gap-1 px-2 py-1 text-[10px] ${isActive(to) ? 'text-foreground' : 'text-muted-foreground'}`}
+            className={`flex min-w-0 flex-col items-center gap-1 px-0.5 py-1 text-[10px] text-center ${isActive(to) ? 'text-foreground' : 'text-muted-foreground'}`}
           >
             <Icon size={20} />
             <span>{label}</span>

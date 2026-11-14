@@ -4,6 +4,7 @@ import { claude, FALLBACK, isClaudeConfigured, MODEL } from "./claude.server";
 import { admin, deliver, setPendingAction, type Profile } from "./store.server";
 import { isSensitiveBenefit, mayTextNudge, type NudgeKind } from "../agent-rules";
 import { confirmedUsage } from "../beni";
+import { currentBenefits } from '../insurance-rules';
 
 type Facts = { kind: NudgeKind; template: string; facts: Record<string, unknown> };
 
@@ -28,7 +29,8 @@ async function gatherFacts(profile: Profile, kind: NudgeKind): Promise<Facts | {
       .eq("kind", "healthcare")
       .order("starts_at"),
   ]);
-  const benefits = benefitsRes.data ?? [];
+  const { data: active } = await db.from('plans_uploaded').select('id').eq('user_id',profile.id).eq('is_active',true).eq('status','ready').maybeSingle();
+  const benefits = currentBenefits(benefitsRes.data ?? [], active?.id);
   const visits = visitsRes.data ?? [];
   const events = eventsRes.data ?? [];
 
