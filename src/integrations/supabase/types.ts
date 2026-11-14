@@ -295,14 +295,17 @@ export type Database = {
           deductible: string | null
           effective_end: string | null
           effective_start: string | null
+          extraction_error: string | null
           file_name: string
           id: string
+          is_active: boolean
           out_of_pocket_max: string | null
           plan_name: string | null
           plan_type: string | null
           provider: string | null
           status: string
           storage_path: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -310,14 +313,17 @@ export type Database = {
           deductible?: string | null
           effective_end?: string | null
           effective_start?: string | null
+          extraction_error?: string | null
           file_name: string
           id?: string
+          is_active?: boolean
           out_of_pocket_max?: string | null
           plan_name?: string | null
           plan_type?: string | null
           provider?: string | null
           status?: string
           storage_path: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -325,14 +331,17 @@ export type Database = {
           deductible?: string | null
           effective_end?: string | null
           effective_start?: string | null
+          extraction_error?: string | null
           file_name?: string
           id?: string
+          is_active?: boolean
           out_of_pocket_max?: string | null
           plan_name?: string | null
           plan_type?: string | null
           provider?: string | null
           status?: string
           storage_path?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -540,7 +549,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      activate_insurance_plan: {
+        Args: { target_plan: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

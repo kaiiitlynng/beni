@@ -8,9 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { hubQuery } from '@/lib/hub-query';
 import { pageHead, confirmedUsage } from '@/lib/beni';
 import { greeting, fmtDate, isHold } from '@/lib/hub';
+import {activeInsurance} from '@/lib/insurance-rules';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
-  head: () => pageHead('your care, all in one place', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
+  head: () => pageHead('your beni home', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
   loader: ({ context }) => context.queryClient.ensureQueryData(hubQuery),
   component: Dashboard,
 });
@@ -28,7 +29,7 @@ function Dashboard() {
     };
   }, [qc]);
 
-  const plan = data.plans[0];
+  const plan = activeInsurance(data.plans);
   const perks = data.benefits.filter((b) => b.hidden_perk).slice(0, 3);
   const now = new Date().toISOString();
   const upcomingEvents = data.events.filter((e) => e.starts_at >= now).slice(0, 3);
@@ -39,10 +40,10 @@ function Dashboard() {
   const suggestions: { title: string; why: string }[] = [];
   for (const b of data.benefits) {
     const used = confirmedUsage(data.visits, b.id);
-    if (b.visit_limit && used < b.visit_limit && suggestions.length < 3) {
+    if (b.coverage_status === 'covered' && b.visit_limit && used < b.visit_limit && suggestions.length < 3) {
       suggestions.push({
         title: `make time for ${b.name.toLowerCase()}.`,
-        why: `your plan documents ${b.visit_limit} visits and you’ve confirmed ${used} — ${b.visit_limit - used} still available.`,
+        why: `your plan documents ${b.visit_limit} visits (${b.cost || 'cost needs verification'}; page ${b.source_page}). you’ve recorded ${used} visits; insurer usage may differ.`,
       });
     }
   }
@@ -91,6 +92,7 @@ function Dashboard() {
                 {plan.file_name} · {plan.status === 'uploaded' ? 'awaiting benefit extraction' : plan.status}
                 {plan.effective_start ? ` · effective ${plan.effective_start}${plan.effective_end ? ` – ${plan.effective_end}` : ''}` : ''}
               </p>
+              <p className="text-xs text-muted-foreground mt-3">last updated {new Date(plan.updated_at).toLocaleDateString()} · {data.benefits.length} documented benefits</p>
               <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-6 mt-6">
                 {[
                   ['provider', plan.provider],
@@ -105,13 +107,14 @@ function Dashboard() {
                   </div>
                 ))}
               </div>
+              <Button asChild variant="outline" className="mt-6"><Link to="/insurance">Change Insurance <ArrowUpRight /></Link></Button>
             </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-5">
               <p className="text-sm text-muted-foreground">your plan hasn’t found its home here yet.</p>
               <Button asChild>
-                <Link to="/onboarding">
-                  add my insurance <ArrowUpRight />
+                <Link to="/insurance">
+                  Upload Insurance <ArrowUpRight />
                 </Link>
               </Button>
             </div>
@@ -135,6 +138,8 @@ function Dashboard() {
                     <p className="text-xs text-muted-foreground mt-3">
                       {b.cost || 'cost not documented'} · page {b.source_page}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-3">worth exploring: covered in your document and easy to overlook.</p>
+                    <Button asChild variant="link" className="px-0 mt-3"><Link to="/benefits">explore benefit <ArrowUpRight /></Link></Button>
                   </article>
                 ))}
               </div>
@@ -191,6 +196,7 @@ function Dashboard() {
                 <article key={s.title} className="border border-border rounded-2xl p-6">
                   <h3 className="text-2xl mb-3">{s.title}</h3>
                   <p className="text-sm text-muted-foreground leading-6">{s.why}</p>
+                  <Button asChild variant="link" className="px-0 mt-3"><Link to="/benefits">explore benefits <ArrowUpRight /></Link></Button>
                 </article>
               ))}
             </div>

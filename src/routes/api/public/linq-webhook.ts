@@ -1,5 +1,5 @@
 // linq-webhook: verifies Linq's Standard Webhooks signature, de-duplicates, and routes inbound texts to the agent.
-// Register https://<app>/api/linq-webhook?version=2026-02-03 for `message.received` in Linq.
+// Register https://<app>/api/public/linq-webhook?version=2026-02-03 for `message.received` in Linq.
 import { createFileRoute } from "@tanstack/react-router";
 
 async function processInbound(rawBody: string) {
@@ -58,7 +58,7 @@ async function processInbound(rawBody: string) {
   });
 }
 
-export const Route = createFileRoute("/api/linq-webhook")({
+export const Route = createFileRoute("/api/public/linq-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {

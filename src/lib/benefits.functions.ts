@@ -1,10 +1,11 @@
 import {createServerFn} from '@tanstack/react-start';
 import {requireSupabaseAuth} from '@/integrations/supabase/auth-middleware';
+import {activeInsurance,currentBenefits} from '@/lib/insurance-rules';
 export const getHub = createServerFn({method:'GET'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
  const client=context.supabase;
  const [profile,plans,benefits,visits,events,messages,reminders]=await Promise.all([client.from('profiles').select('*').eq('id',context.userId).single(),client.from('plans_uploaded').select('*').order('created_at',{ascending:false}),client.from('benefits').select('*'),client.from('visits').select('*'),client.from('calendar_events').select('*').order('starts_at'),client.from('messages').select('*').order('created_at').limit(100),client.from('reminders').select('*')]);
  for(const result of [profile,plans,benefits,visits,events,messages,reminders]) if(result.error) throw new Error('Your care information could not be loaded. Please try again.');
-  return {profile:profile.data,plans:plans.data??[],benefits:benefits.data??[],visits:visits.data??[],events:events.data??[],messages:messages.data??[],reminders:reminders.data??[],messagingConnected:Boolean(process.env['LINQ_API_TOKEN']&&process.env['LINQ_FROM_NUMBER'])&&Boolean(profile.data?.sms_consent),beniNumber:process.env['LINQ_FROM_NUMBER']??null};
+  return {profile:profile.data,plans:plans.data??[],benefits:currentBenefits(benefits.data??[],activeInsurance(plans.data??[])?.id),visits:visits.data??[],events:events.data??[],messages:messages.data??[],reminders:reminders.data??[],messagingConnected:Boolean(process.env['LINQ_API_TOKEN']&&process.env['LINQ_FROM_NUMBER'])&&Boolean(profile.data?.sms_consent),beniNumber:process.env['LINQ_FROM_NUMBER']??null};
 });
 
 type HoldInput={title:string;starts_at:string;ends_at?:string|null;location?:string|null;notes?:string|null;benefit_id?:string|null};

@@ -1,7 +1,7 @@
 // extract-plan: reads an uploaded insurance PDF with Claude and stores only page-cited benefits.
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { claude, FALLBACK, MODEL } from "./claude.server";
+import { generateMessage } from '@lovable.dev/ai-gateway';
 import { BENEFIT_CATEGORIES, toBenefitRows } from "../agent-rules";
 
 const nullableText = z.string().nullable();
@@ -85,19 +85,18 @@ export async function extractPlanForUser(admin: Admin, userId: string, planId: s
     .eq("user_id", userId)
     .single();
   if (error || !plan) throw new Error("That document could not be found.");
-
-  await admin.from("plans_uploaded").update({ status: "processing" }).eq("id", planId);
+  if (plan.status === 'ready') return { status: 'ready' as const, benefits: (await admin.from('benefits').select('id').eq('plan_id', planId)).data?.length ?? 0 };
+  const claim = await admin.from('plans_uploaded').update({ status: 'processing', extraction_error: null }).eq('id', planId).eq('user_id',userId).neq('status','processing').select('id');
+  if (claim.error || !claim.data?.length) throw new Error('This document is already being processed. Please check back shortly.');
   try {
     const file = await admin.storage.from("insurance-plans").download(plan.storage_path);
     if (file.error || !file.data) throw new Error("The PDF could not be read from storage.");
     const pdf = toBase64(new Uint8Array(await file.data.arrayBuffer()));
 
-    const response = await claude().beta.messages.parse(
+    const response = await generateMessage(
       {
-        model: MODEL,
+        model: 'anthropic/claude-opus-5-5',
         max_tokens: 16000,
-        ...FALLBACK,
-        betas: [...FALLBACK.betas],
         output_config: { effort: "medium", format: betaZodOutputFormat(PlanExtraction) },
         system: SYSTEM,
         messages: [
@@ -116,14 +115,14 @@ export async function extractPlanForUser(admin: Admin, userId: string, planId: s
           },
         ],
       },
-      { timeout: 5 * 60 * 1000 },
     );
 
     if (response.stop_reason === "refusal")
       throw new Error("This document could not be processed.");
     if (response.stop_reason === "max_tokens")
       throw new Error("This document is too long to process in one pass.");
-    const parsed = response.parsed_output;
+    const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const parsed = PlanExtraction.parse(JSON.parse(text));
     if (!parsed) throw new Error("No benefits could be read from this document.");
     if (!parsed.is_insurance_document)
       throw new Error("This does not look like an insurance plan document.");
@@ -145,7 +144,7 @@ export async function extractPlanForUser(admin: Admin, userId: string, planId: s
       const inserted = await admin.from("benefits").insert(rows);
       if (inserted.error) throw inserted.error;
     }
-    await admin
+    const saved = await admin
       .from("plans_uploaded")
       .update({
         status: "ready",
@@ -156,16 +155,18 @@ export async function extractPlanForUser(admin: Admin, userId: string, planId: s
         out_of_pocket_max: parsed.plan.out_of_pocket_max,
         effective_start: isoDate(parsed.plan.effective_start),
         effective_end: isoDate(parsed.plan.effective_end),
+        updated_at: new Date().toISOString(),
+        extraction_error: null,
       })
       .eq("id", planId);
+    if (saved.error) throw new Error('Your extracted plan could not be saved. Please retry.');
     return { status: "ready" as const, benefits: rows.length };
   } catch (e) {
-    console.error("[extract-plan]", e);
-    await admin.from("plans_uploaded").update({ status: "failed" }).eq("id", planId);
     const message =
       e instanceof Error && !("status" in e)
         ? e.message
         : "Your document could not be processed. Please try again.";
+    await admin.from("plans_uploaded").update({ status: "failed", extraction_error: message }).eq("id", planId).eq('user_id',userId);
     return { status: "failed" as const, benefits: 0, message };
   }
 }

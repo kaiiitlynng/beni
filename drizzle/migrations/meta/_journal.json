@@ -15,6 +15,13 @@
       "when": 1794693400973,
       "tag": "0001_beni_hub_expansion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794696533640,
+      "tag": "0002_insurance_plan_review_and_activation",
+      "breakpoints": true
     }
   ]
 }
