@@ -21,7 +21,7 @@ export function googleCalendarFailure(status: number, rawBody: string) {
   if (/notFound|not_found/i.test(detail)) {
     return { cause: 'calendar_missing', message: 'Google could not find one of the requested calendars. Check that it still exists and is shared with your connected Google account, then refresh. Beni will not show availability until every calendar can be checked.' };
   }
-  if (/forbidden|permission_denied/i.test(detail)) {
+  if (/forbidden/i.test(detail)) {
     return { cause: 'calendar_permission', message: 'Google denied access to a calendar. Check its sharing permissions for your connected Google account; adding events requires permission to edit that calendar. Reconnecting will not change calendar-sharing permissions.' };
   }
   if (status >= 500 || /backendError|internalError/i.test(detail)) {
