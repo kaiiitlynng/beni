@@ -10,7 +10,9 @@ export const Route=createFileRoute('/api/public/linq/webhook')({server:{handlers
     if(raw.length>262144)return new Response('Payload too large',{status:413});
     const {verifyLinqSignature}=await import('@/lib/linq-signature.server');
     if(!verifyLinqSignature(request.headers,raw,secret))return new Response('Invalid signature',{status:401});
-    const parsed=schema.safeParse(JSON.parse(raw));
+    let json:unknown;
+    try {json=JSON.parse(raw);}catch{return new Response('Invalid JSON',{status:400});}
+    const parsed=schema.safeParse(json);
     if(!parsed.success)return new Response('Invalid webhook payload or version',{status:400});
     const event=parsed.data;
     const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
@@ -37,6 +39,7 @@ export const Route=createFileRoute('/api/public/linq/webhook')({server:{handlers
         const users=[...new Set(routes?.map(r=>r.user_id))];
         if(users.length===1) {
           const userId=users[0];
+          if(!userId) return new Response('Invalid message route',{status:400});
           const {data:profile,error:profileError}=await supabaseAdmin.from('profiles').select('phone').eq('id',userId).single();
           if(profileError)throw profileError;
           const {normalizePhone}=await import('@/lib/integration-rules');

@@ -55,7 +55,7 @@ export async function processLinqQueue() {
     try {
       const {data:profile,error:profileError}=await supabaseAdmin.from('profiles').select('*').eq('id',inbound.user_id).single();
       if(profileError)throw new Error('Profile lookup failed.');
-      if(!profile||!textingAllowed(profile)||profile.linq_verified_phone!==inbound.recipient_phone) {
+      if(!profile||!inbound.recipient_phone||!textingAllowed(profile)||profile.linq_verified_phone!==inbound.recipient_phone) {
         await supabaseAdmin.from('linq_messages').update({reply_status:'paused'}).eq('id',inbound.id);continue;
       }
       const [{data:benefits,error:benefitError},{data:history,error:historyError}]=await Promise.all([supabaseAdmin.from('benefits').select('name,coverage_status,description,cost,restrictions,source_page').eq('user_id',inbound.user_id),supabaseAdmin.from('linq_messages').select('direction,body').eq('user_id',inbound.user_id).eq('recipient_phone',inbound.recipient_phone).order('created_at',{ascending:false}).limit(10)]);

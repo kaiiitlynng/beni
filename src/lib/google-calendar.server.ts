@@ -6,7 +6,7 @@ export const GATEWAY = 'https://connector-gateway.lovable.dev';
 export async function googleCall(userId:string,path:string,init?:RequestInit) {
   const key = await getConnectionKeyForUser(userId,'google_calendar');
   if(!key) throw new Error('Connect your Google Calendar first.');
-  const res = await callAsAppUser({gatewayBaseUrl:GATEWAY,connectionAPIKey:key,connectorId:'google_calendar',path,init,requiredScopes:GOOGLE_SCOPES});
+  const res = await callAsAppUser({gatewayBaseUrl:GATEWAY,connectionAPIKey:key,connectorId:'google_calendar',path,...(init?{init}:{}),requiredScopes:GOOGLE_SCOPES});
   if(await appUserReconnectRequired(res)) throw new Error('Your Google Calendar access needs to be renewed. Reconnect your calendar.');
   if(!res.ok) {
     const body = await res.text();
