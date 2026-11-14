@@ -32,6 +32,7 @@
 - [ ] End-to-end check with a public sample plan
 
 # real integrations
+- [ ] Restore existing Google connector OAuth controls, real event/availability reads, approved export and signed-in end-to-end verification
 - [ ] Secure per-user Google Calendar consent, upcoming events, availability and approved event export
 - [x] Linq consent-gated test message and appointment reminders — built in `src/lib/server/nudge.server.ts` (secrets still to set)
 - [x] Signed Linq reply webhook, private history and AI responses — built in `src/routes/api/public/linq-webhook.ts` + `src/lib/server/agent.server.ts`; extend these rather than adding a second webhook or agent
