@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_connections: {
+        Row: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_key_ciphertext?: string
+          connector_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       benefits: {
         Row: {
           category: string
@@ -78,6 +105,8 @@ export type Database = {
         Row: {
           benefit_id: string | null
           ends_at: string | null
+          google_calendar_id: string | null
+          google_event_id: string | null
           id: string
           kind: string
           location: string | null
@@ -91,6 +120,8 @@ export type Database = {
         Insert: {
           benefit_id?: string | null
           ends_at?: string | null
+          google_calendar_id?: string | null
+          google_event_id?: string | null
           id?: string
           kind?: string
           location?: string | null
@@ -104,6 +135,8 @@ export type Database = {
         Update: {
           benefit_id?: string | null
           ends_at?: string | null
+          google_calendar_id?: string | null
+          google_event_id?: string | null
           id?: string
           kind?: string
           location?: string | null
@@ -130,6 +163,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_jobs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id: string
+          kind: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      linq_messages: {
+        Row: {
+          body: string
+          chat_id: string | null
+          created_at: string
+          delivery_status: string
+          direction: string
+          id: string
+          provider_message_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          chat_id?: string | null
+          created_at?: string
+          delivery_status?: string
+          direction: string
+          id?: string
+          provider_message_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          chat_id?: string | null
+          created_at?: string
+          delivery_status?: string
+          direction?: string
+          id?: string
+          provider_message_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      linq_webhook_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -236,6 +347,7 @@ export type Database = {
           home_city: string
           id: string
           interests: string[]
+          linq_verified_phone: string | null
           messaging_hours: string
           notify_appointments: boolean
           notify_benefits: boolean
@@ -260,6 +372,7 @@ export type Database = {
           home_city?: string
           id: string
           interests?: string[]
+          linq_verified_phone?: string | null
           messaging_hours?: string
           notify_appointments?: boolean
           notify_benefits?: boolean
@@ -284,6 +397,7 @@ export type Database = {
           home_city?: string
           id?: string
           interests?: string[]
+          linq_verified_phone?: string | null
           messaging_hours?: string
           notify_appointments?: boolean
           notify_benefits?: boolean
