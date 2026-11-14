@@ -76,7 +76,12 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          benefit_id: string | null
+          ends_at: string | null
           id: string
+          kind: string
+          location: string | null
+          notes: string | null
           starts_at: string
           status: string
           title: string
@@ -84,7 +89,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          benefit_id?: string | null
+          ends_at?: string | null
           id?: string
+          kind?: string
+          location?: string | null
+          notes?: string | null
           starts_at: string
           status?: string
           title: string
@@ -92,7 +102,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          benefit_id?: string | null
+          ends_at?: string | null
           id?: string
+          kind?: string
+          location?: string | null
+          notes?: string | null
           starts_at?: string
           status?: string
           title?: string
@@ -100,6 +115,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "calendar_events_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "benefits"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calendar_events_user_id_fkey"
             columns: ["user_id"]
@@ -151,6 +173,8 @@ export type Database = {
         Row: {
           created_at: string
           deductible: string | null
+          effective_end: string | null
+          effective_start: string | null
           file_name: string
           id: string
           out_of_pocket_max: string | null
@@ -164,6 +188,8 @@ export type Database = {
         Insert: {
           created_at?: string
           deductible?: string | null
+          effective_end?: string | null
+          effective_start?: string | null
           file_name: string
           id?: string
           out_of_pocket_max?: string | null
@@ -177,6 +203,8 @@ export type Database = {
         Update: {
           created_at?: string
           deductible?: string | null
+          effective_end?: string | null
+          effective_start?: string | null
           file_name?: string
           id?: string
           out_of_pocket_max?: string | null
@@ -208,11 +236,19 @@ export type Database = {
           home_city: string
           id: string
           interests: string[]
+          messaging_hours: string
+          notify_appointments: boolean
+          notify_benefits: boolean
+          notify_checkins: boolean
+          notify_expiration: boolean
+          notify_sms: boolean
           onboarding_complete: boolean
           organization: string
           phone: string
+          reminder_frequency: string
           reminder_preferences: string[]
           sms_consent: boolean
+          timezone: string
         }
         Insert: {
           availability?: string
@@ -224,11 +260,19 @@ export type Database = {
           home_city?: string
           id: string
           interests?: string[]
+          messaging_hours?: string
+          notify_appointments?: boolean
+          notify_benefits?: boolean
+          notify_checkins?: boolean
+          notify_expiration?: boolean
+          notify_sms?: boolean
           onboarding_complete?: boolean
           organization?: string
           phone?: string
+          reminder_frequency?: string
           reminder_preferences?: string[]
           sms_consent?: boolean
+          timezone?: string
         }
         Update: {
           availability?: string
@@ -240,11 +284,19 @@ export type Database = {
           home_city?: string
           id?: string
           interests?: string[]
+          messaging_hours?: string
+          notify_appointments?: boolean
+          notify_benefits?: boolean
+          notify_checkins?: boolean
+          notify_expiration?: boolean
+          notify_sms?: boolean
           onboarding_complete?: boolean
           organization?: string
           phone?: string
+          reminder_frequency?: string
           reminder_preferences?: string[]
           sms_consent?: boolean
+          timezone?: string
         }
         Relationships: []
       }

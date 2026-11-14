@@ -8,6 +8,13 @@
       "when": 1794690291407,
       "tag": "0000_beni_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794693400973,
+      "tag": "0001_beni_hub_expansion",
+      "breakpoints": true
     }
   ]
 }
