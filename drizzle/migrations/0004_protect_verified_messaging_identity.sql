@@ -1,0 +1,1 @@
+REVOKE INSERT, DELETE ON public.profiles FROM authenticated;

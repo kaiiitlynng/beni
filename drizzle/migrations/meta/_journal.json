@@ -29,6 +29,13 @@
       "when": 1794695198702,
       "tag": "0003_beni_integration_message_routing",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794695515381,
+      "tag": "0004_protect_verified_messaging_identity",
+      "breakpoints": true
     }
   ]
 }
