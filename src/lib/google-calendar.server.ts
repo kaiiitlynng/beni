@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { callAsAppUser, appUserReconnectRequired } from '@/integrations/lovable/appUserConnector';
 import { getConnectionKeyForUser } from './appUserConnections.server';
 import { availableWindows } from './google-calendar-rules';
+import { googleCalendarFailure } from './google-calendar-errors';
 export const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/userinfo.profile','https://www.googleapis.com/auth/calendar.readonly','https://www.googleapis.com/auth/calendar.events'];
 export class CalendarReconnect extends Error {}
 export async function googleCall(userId: string, path: string, init?: RequestInit) {
@@ -9,12 +10,18 @@ export async function googleCall(userId: string, path: string, init?: RequestIni
   if (!connectionAPIKey) throw new Error('Connect your Google Calendar first.');
   const res = await callAsAppUser({ gatewayBaseUrl:'https://connector-gateway.lovable.dev', connectionAPIKey, connectorId:'google_calendar', path:`/calendar/v3${path}`, requiredScopes:GOOGLE_SCOPES, ...(init ? {init}: {}) });
   if (await appUserReconnectRequired(res)) throw new CalendarReconnect('Your Google access needs to be renewed.');
+  if (!res.ok && !(res.status === 409 && init?.method === 'POST')) {
+    const rawBody = await res.clone().text();
+    const failure = googleCalendarFailure(res.status, rawBody);
+    console.error('[google-calendar] Provider request failed', { path, status: res.status, cause: failure.cause, body: rawBody });
+    throw new Error(failure.message);
+  }
   return res;
 }
 const calendarSchema = z.object({ items: z.array(z.object({ id:z.string(), summary:z.string().optional(), accessRole:z.string().optional(), timeZone:z.string().optional() })).default([]) });
 const eventSchema = z.object({ id:z.string(), summary:z.string().optional(), status:z.string().optional(), start:z.object({ dateTime:z.string().optional(),date:z.string().optional() }), end:z.object({ dateTime:z.string().optional(),date:z.string().optional() }), htmlLink:z.string().optional() });
 const eventsSchema = z.object({items:z.array(eventSchema).default([])});
-const freeSchema = z.object({ calendars:z.record(z.object({busy:z.array(z.object({start:z.string(),end:z.string()})).default([]),errors:z.array(z.unknown()).optional()})) });
+const freeSchema = z.object({ calendars:z.record(z.object({busy:z.array(z.object({start:z.string(),end:z.string()})).default([]),errors:z.array(z.object({domain:z.string().optional(),reason:z.string().optional()})).optional()})) });
 export async function readGoogleSchedule(userId:string) {
   const connection = await getConnectionKeyForUser(userId,'google_calendar');
   if (!connection) return { connected:false, reconnectRequired:false, events:[], availability:[], error:null };
@@ -31,7 +38,11 @@ export async function readGoogleSchedule(userId:string) {
     const free=await googleCall(userId,'/freeBusy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({timeMin:start,timeMax:end,items:calendars.map(c=>({id:c.id}))})});
     if(!free.ok) throw new Error(`Google could not read availability (${free.status}).`);
     const result=freeSchema.parse(await free.json());
-    if(Object.values(result.calendars).some(c=>c.errors?.length)) throw new Error('Google could not check every calendar. Availability is unavailable; please retry.');
+    const calendarErrors = Object.values(result.calendars).flatMap(c=>c.errors??[]);
+    if(calendarErrors.length) {
+      console.error('[google-calendar] Availability check failed', { errors: calendarErrors });
+      throw new Error(googleCalendarFailure(403, JSON.stringify({error:{errors:calendarErrors}})).message);
+    }
     return {connected:true,reconnectRequired:false,events,availability:availableWindows(Object.values(result.calendars).flatMap(c=>c.busy),start,end),error:null};
   } catch(e) {
     if(e instanceof CalendarReconnect) return {connected:false,reconnectRequired:true,events:[],availability:[],error:e.message};

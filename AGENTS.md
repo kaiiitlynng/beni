@@ -44,4 +44,5 @@ use the editor.
 - Insurance activation is an owner-authenticated atomic database operation with a unique active-plan index; current coverage in both web and text surfaces filters by that plan to prevent historical benefit mixing.
 - Processing stores reviewable inactive plans; clients can insert only upload identity fields, not coverage, processing status or activation state, to prevent forged insurance facts.
 - Google Calendar uses the linked per-user connector via popup code exchange, encrypted Cloud connection handles and live API verification; never infer connected status from popup closure or a stored handle alone.
+- Diagnose Google Calendar failures from the provider response body in the shared transport so reads and exports show actionable causes without changing OAuth or retrying writes.
 - Google exports require an owned confirmed Beni entry plus explicit export approval and deterministic provider event IDs, preventing tentative exports and retry duplicates without claiming provider bookings.
