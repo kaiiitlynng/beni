@@ -9,8 +9,8 @@ export async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 }
 
-// `profiles.pending_action` and `webhook_events` come from the Lovable schema change described in
-// AGENTS.md. Until types.ts is regenerated with them, they are reached through an untyped client.
+// `profiles.pending_action` comes from the Lovable schema change described in AGENTS.md.
+// Until types.ts is regenerated with it, it is reached through an untyped client.
 async function untyped(): Promise<SupabaseClient> {
   return (await admin()) as unknown as SupabaseClient;
 }
@@ -23,18 +23,22 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data ?? null;
 }
 
-/** Finds the profile whose stored phone number normalizes to the same E.164 number. */
+/** Finds the one profile whose verified Linq number, or else stored phone, normalizes to the same E.164 number. */
 export async function findProfileByPhone(phone: string): Promise<Profile | null> {
   const target = toE164(phone);
   if (!target) return null;
+  const last4 = target.slice(-4);
   const { data } = await (
     await admin()
   )
     .from("profiles")
     .select("*")
-    .ilike("phone", `%${target.slice(-4)}`)
+    .or(`phone.ilike.%${last4},linq_verified_phone.ilike.%${last4}`)
     .limit(50);
-  const matches = (data ?? []).filter((p) => toE164(p.phone) === target);
+  const rows = data ?? [];
+  const verified = rows.filter((p) => toE164(p.linq_verified_phone) === target);
+  if (verified.length === 1) return verified[0]!;
+  const matches = rows.filter((p) => toE164(p.phone) === target);
   return matches.length === 1 ? matches[0]! : null;
 }
 
@@ -57,6 +61,12 @@ export async function getPendingAction(userId: string): Promise<PendingAction | 
   return isPendingActive(action) ? action : null;
 }
 
+/** True once Lovable has added `profiles.pending_action` (needed for yes/no confirmations by text). */
+export async function hasPendingActionColumn(): Promise<boolean> {
+  const { error } = await (await untyped()).from("profiles").select("pending_action").limit(1);
+  return !error;
+}
+
 export async function setPendingAction(
   userId: string,
   action: PendingAction | null,
@@ -71,12 +81,25 @@ export async function setPendingAction(
   return !error;
 }
 
-/** Records a webhook event id. Returns false when it was already processed (Linq delivers at least once). */
+/** Records a webhook event id in Lovable's `linq_webhook_receipts`. Returns false when it was already seen (Linq delivers at least once). */
 export async function claimWebhookEvent(id: string): Promise<boolean> {
-  const { error } = await (await untyped()).from("webhook_events").insert({ id });
+  const { error } = await (await admin()).from("linq_webhook_receipts").insert({ id });
   if (!error) return true;
   if (error.code === "23505") return false;
-  throw new Error(`webhook_events unavailable: ${error.message}`);
+  throw new Error(`linq_webhook_receipts unavailable: ${error.message}`);
+}
+
+/** When the webhook last received a signed Linq event, for the connection check. */
+export async function lastWebhookReceipt(): Promise<string | null> {
+  const { data } = await (
+    await admin()
+  )
+    .from("linq_webhook_receipts")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.created_at ?? null;
 }
 
 export async function recordMessage(m: {
@@ -86,17 +109,13 @@ export async function recordMessage(m: {
   channel: Channel;
   delivery_status: string;
 }) {
-  const { error } = await (
-    await admin()
-  )
-    .from("messages")
-    .insert({
-      user_id: m.userId,
-      direction: m.direction,
-      body: m.body,
-      channel: m.channel,
-      delivery_status: m.delivery_status,
-    });
+  const { error } = await (await admin()).from("messages").insert({
+    user_id: m.userId,
+    direction: m.direction,
+    body: m.body,
+    channel: m.channel,
+    delivery_status: m.delivery_status,
+  });
   if (error) console.error("[store] message not recorded", error.message);
 }
 
@@ -115,7 +134,7 @@ export async function deliver(opts: {
   allowedToText: boolean;
   chatId?: string | null;
 }): Promise<{ channel: Channel; delivery_status: string }> {
-  const phone = toE164(opts.profile.phone);
+  const phone = toE164(opts.profile.linq_verified_phone) ?? toE164(opts.profile.phone);
   if (opts.mode === "auto" && opts.allowedToText && phone && isLinqConfigured()) {
     const sent = await sendText({ to: phone, body: opts.body, chatId: opts.chatId ?? null });
     const channel = sent.ok ? channelFromService(sent.service) : "sms";

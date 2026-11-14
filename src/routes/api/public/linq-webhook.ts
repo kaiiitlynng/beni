@@ -2,6 +2,11 @@
 // Register https://<app>/api/public/linq-webhook?version=2026-02-03 for `message.received` in Linq.
 import { createFileRoute } from "@tanstack/react-router";
 
+const UNKNOWN_NUMBER_REPLY =
+  "hi! this is beni 🌱 i don’t recognize this number yet. add it to your profile in the beni app (settings → phone number), then text me again.";
+const NO_CONSENT_REPLY =
+  "hi! texts from beni are turned off for your account. reply START to turn them on, then ask me anything about your benefits.";
+
 async function processInbound(rawBody: string) {
   const [{ parseInbound, sendText }, store, { handleIncoming }, rules] = await Promise.all([
     import("@/lib/server/linq.server"),
@@ -14,7 +19,11 @@ async function processInbound(rawBody: string) {
   if (!(await store.claimWebhookEvent(inbound.eventId))) return;
 
   const profile = await store.findProfileByPhone(inbound.from);
-  if (!profile) return; // Unknown numbers get no reply and nothing is stored.
+  if (!profile) {
+    // They texted us first, so one short pointer is a reply, not an unsolicited message. Nothing is stored.
+    await sendText({ to: inbound.from, body: UNKNOWN_NUMBER_REPLY, chatId: inbound.chatId });
+    return;
+  }
   const channel = store.channelFromService(inbound.service);
 
   const keyword = rules.smsKeyword(inbound.text);
@@ -45,7 +54,11 @@ async function processInbound(rawBody: string) {
     });
     return;
   }
-  if (!profile.sms_consent) return; // No conversation without opt-in.
+  if (!profile.sms_consent) {
+    // No conversation without opt-in; texting START is the opt-in.
+    await sendText({ to: inbound.from, body: NO_CONSENT_REPLY, chatId: inbound.chatId });
+    return;
+  }
 
   const reply = await handleIncoming({ profile, text: inbound.text, channel });
   const sent = await sendText({ to: inbound.from, body: reply, chatId: inbound.chatId });

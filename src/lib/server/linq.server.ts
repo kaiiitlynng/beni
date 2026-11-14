@@ -1,27 +1,41 @@
 // Linq Partner API v3 (iMessage / RCS / SMS). Token, number and signing secret live in Lovable Secrets.
 // Shapes follow https://cdn.linqapp.com/openapi/linq-api-v3.yaml
 
+import { toE164 } from "../agent-rules";
+
 const BASE = "https://api.linqapp.com/api/partner/v3";
 
+/** beni's sending number in E.164, tolerating spaces or dashes in the secret. */
 export function linqNumber(): string | null {
-  return process.env["LINQ_FROM_NUMBER"] || null;
+  return toE164(process.env["LINQ_FROM_NUMBER"]);
 }
 
 export function isLinqConfigured(): boolean {
-  return Boolean(process.env["LINQ_API_TOKEN"] && process.env["LINQ_FROM_NUMBER"]);
+  return Boolean(process.env["LINQ_API_TOKEN"] && linqNumber());
 }
 
 type SendResult =
   { ok: true; chatId: string | null; service: string | null } | { ok: false; error: string };
 
-async function linqFetch(path: string, body: unknown): Promise<Response> {
+/** Pulls Linq's human-readable error out of a response body, if there is one. */
+function linqErrorMessage(detail: string): string {
+  try {
+    const j = JSON.parse(detail) as { error?: { message?: string } | string; message?: string };
+    const msg = typeof j.error === "string" ? j.error : (j.error?.message ?? j.message);
+    return msg ? `: ${String(msg).slice(0, 200)}` : "";
+  } catch {
+    return "";
+  }
+}
+
+async function linqFetch(path: string, body?: unknown): Promise<Response> {
   return fetch(`${BASE}${path}`, {
-    method: "POST",
+    method: body === undefined ? "GET" : "POST",
     headers: {
       Authorization: `Bearer ${process.env["LINQ_API_TOKEN"]}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 }
 
@@ -47,7 +61,7 @@ export async function sendText(opts: {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error("[linq] send failed", res.status, detail.slice(0, 500));
-      return { ok: false, error: `Linq returned ${res.status}` };
+      return { ok: false, error: `Linq returned ${res.status}${linqErrorMessage(detail)}` };
     }
     const json = (await res.json().catch(() => ({}))) as {
       chat_id?: string;
@@ -166,4 +180,116 @@ export function parseInbound(payload: unknown): LinqInbound | null {
     .trim();
   if (!chatId || !from || !text) return null;
   return { eventId: p.event_id, chatId, from, text, service: d.service ?? null };
+}
+
+export type LinqAccountCheck = {
+  tokenValid: boolean;
+  error: string | null;
+  numberOnAccount: boolean | null;
+  numberStatus: string | null;
+  webhook: {
+    registered: boolean;
+    active: boolean;
+    receivesMessages: boolean;
+    usesExpectedVersion: boolean;
+  };
+};
+
+/** Read-only check of the Linq account: token works, the sending number belongs to it, and a webhook points at `webhookUrl`. */
+export async function checkLinqAccount(webhookUrl: string): Promise<LinqAccountCheck> {
+  const empty = {
+    registered: false,
+    active: false,
+    receivesMessages: false,
+    usesExpectedVersion: false,
+  };
+  if (!process.env["LINQ_API_TOKEN"]) {
+    return {
+      tokenValid: false,
+      error: "LINQ_API_TOKEN is not set.",
+      numberOnAccount: null,
+      numberStatus: null,
+      webhook: empty,
+    };
+  }
+  try {
+    const [numbersRes, subsRes] = await Promise.all([
+      linqFetch("/phone_numbers"),
+      linqFetch("/webhook-subscriptions"),
+    ]);
+    if (numbersRes.status === 401 || numbersRes.status === 403) {
+      return {
+        tokenValid: false,
+        error: "Linq rejected the token.",
+        numberOnAccount: null,
+        numberStatus: null,
+        webhook: empty,
+      };
+    }
+    if (!numbersRes.ok) {
+      const detail = await numbersRes.text().catch(() => "");
+      return {
+        tokenValid: false,
+        error: `Linq returned ${numbersRes.status}${linqErrorMessage(detail)}`,
+        numberOnAccount: null,
+        numberStatus: null,
+        webhook: empty,
+      };
+    }
+    const numbers =
+      (
+        (await numbersRes.json()) as {
+          phone_numbers?: { phone_number?: string; line_status?: string }[];
+        }
+      ).phone_numbers ?? [];
+    const from = linqNumber();
+    const mine = from ? numbers.find((n) => toE164(n.phone_number) === from) : undefined;
+
+    const subs = subsRes.ok
+      ? ((
+          (await subsRes.json()) as {
+            subscriptions?: {
+              target_url?: string;
+              subscribed_events?: string[];
+              is_active?: boolean;
+            }[];
+          }
+        ).subscriptions ?? [])
+      : [];
+    const path = new URL(webhookUrl).pathname;
+    const host = new URL(webhookUrl).host;
+    const match = subs.find((s) => {
+      try {
+        const u = new URL(s.target_url ?? "");
+        return u.pathname === path && u.host === host;
+      } catch {
+        return false;
+      }
+    });
+    return {
+      tokenValid: true,
+      error: null,
+      numberOnAccount: from ? Boolean(mine) : null,
+      numberStatus: mine?.line_status ?? null,
+      webhook: match
+        ? {
+            registered: true,
+            active: match.is_active !== false,
+            receivesMessages: (match.subscribed_events ?? []).some(
+              (e) => e === "message.received" || e === "*",
+            ),
+            usesExpectedVersion:
+              new URL(match.target_url!).searchParams.get("version") === "2026-02-03",
+          }
+        : empty,
+    };
+  } catch {
+    return {
+      tokenValid: false,
+      error: "Linq could not be reached.",
+      numberOnAccount: null,
+      numberStatus: null,
+      webhook: empty,
+    };
+  }
 }

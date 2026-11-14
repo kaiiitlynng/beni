@@ -29,6 +29,7 @@
 - [x] ANTHROPIC_API_KEY and LINQ_WEBHOOK_SECRET saved securely
 - [ ] Linq outbound configuration — requires LINQ_API_TOKEN and LINQ_FROM_NUMBER for the current text agent
 - [ ] Linq webhook subscription registered for `message.received`
+- [x] Linq connection check and test text on /demo; webhook de-duplication on `linq_webhook_receipts`; unknown or opted-out numbers get a setup hint
 - [ ] End-to-end check with a public sample plan
 
 # real integrations

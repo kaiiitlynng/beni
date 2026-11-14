@@ -69,3 +69,82 @@ export const sendNudge = createServerFn({ method: "POST" })
     if (!profile) throw new Error("Your profile could not be loaded.");
     return sendNudgeFor(profile, data.kind, data.mode);
   });
+
+/**
+ * Connection check for the /demo page. Reports which pieces are in place without revealing secret values,
+ * and the exact webhook URL to register with Linq.
+ */
+export const linqConnectionStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [{ getRequest }, linq, store, rules, { isClaudeConfigured }] = await Promise.all([
+      import("@tanstack/react-start/server"),
+      import("./server/linq.server"),
+      import("./server/store.server"),
+      import("./agent-rules"),
+      import("./server/claude.server"),
+    ]);
+    const origin = new URL(getRequest().url).origin;
+    const webhookUrl = `${origin}/api/public/linq-webhook?version=2026-02-03`;
+    const profile = await store.getProfile(context.userId);
+    const yourPhone = rules.toE164(profile?.linq_verified_phone) ?? rules.toE164(profile?.phone);
+    const [account, lastWebhookAt, owner, schemaReady] = await Promise.all([
+      linq.checkLinqAccount(webhookUrl),
+      store.lastWebhookReceipt(),
+      yourPhone ? store.findProfileByPhone(yourPhone) : Promise.resolve(null),
+      store.hasPendingActionColumn(),
+    ]);
+    return {
+      secrets: {
+        LINQ_API_TOKEN: Boolean(process.env["LINQ_API_TOKEN"]),
+        LINQ_FROM_NUMBER: Boolean(linq.linqNumber()),
+        LINQ_WEBHOOK_SECRET: Boolean(process.env["LINQ_WEBHOOK_SECRET"]),
+        ANTHROPIC_API_KEY: isClaudeConfigured(),
+      },
+      beniNumber: linq.linqNumber(),
+      webhookUrl,
+      isPreviewOrigin: /id-preview|lovableproject|localhost/.test(origin),
+      account,
+      lastWebhookAt,
+      you: {
+        phone: yourPhone,
+        consent: Boolean(profile?.sms_consent),
+        // A reply can only be routed when exactly this profile owns the number.
+        phoneRoutesToYou: Boolean(owner && owner.id === context.userId),
+      },
+      confirmationsReady: schemaReady,
+    };
+  });
+
+/** Sends a one-off test text to the signed-in user's own number through Linq. */
+export const sendLinqTestText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [linq, store, rules] = await Promise.all([
+      import("./server/linq.server"),
+      import("./server/store.server"),
+      import("./agent-rules"),
+    ]);
+    const profile = await store.getProfile(context.userId);
+    if (!profile) throw new Error("Your profile could not be loaded.");
+    const to = rules.toE164(profile.linq_verified_phone) ?? rules.toE164(profile.phone);
+    if (!to) return { ok: false as const, error: "Add a valid phone number in settings first." };
+    if (!profile.sms_consent)
+      return { ok: false as const, error: "Turn on text consent in settings first." };
+    if (!linq.isLinqConfigured())
+      return {
+        ok: false as const,
+        error: "LINQ_API_TOKEN and LINQ_FROM_NUMBER must be set in Lovable Secrets.",
+      };
+    const body =
+      "beni connection test ✓ now text me a question, like “does my plan cover vision?”, to test replies.";
+    const sent = await linq.sendText({ to, body });
+    await store.recordMessage({
+      userId: profile.id,
+      direction: "outgoing",
+      body,
+      channel: sent.ok ? store.channelFromService(sent.service) : "sms",
+      delivery_status: sent.ok ? "sent" : "failed",
+    });
+    return sent.ok ? { ok: true as const, to } : { ok: false as const, error: sent.error };
+  });
