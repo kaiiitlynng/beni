@@ -12,6 +12,10 @@ import { eventDay, fmtTime, isHold, isBooked } from '@/lib/hub';
 import { createHold, confirmHold, deleteEvent } from '@/lib/benefits.functions';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
+import {useServerFn} from '@tanstack/react-start';
+import {CalendarConnection} from '@/components/beni/calendar-connection';
+import {GoogleSchedule} from '@/components/beni/google-schedule';
+import {exportAppointment} from '@/lib/calendar-integration.functions';
 
 export const Route = createFileRoute('/_authenticated/calendar')({
   head: () => pageHead('care that fits your life', 'Your schedule, your benefits, beautifully coordinated.'),
@@ -41,6 +45,13 @@ function CalendarPage() {
   const [selected, setSelected] = useState(() => toKey(new Date()));
   const [holdForm, setHoldForm] = useState(false);
   const [busy, setBusy] = useState(false);
+  const exportToGoogle=useServerFn(exportAppointment);
+  async function addToGoogle(id:string){
+    if(!window.confirm('Add this approved Beni appointment to Google Calendar? This creates a calendar entry only, not a booking with a healthcare provider.'))return;
+    setBusy(true);
+    try{await exportToGoogle({data:{id,approved:true}});toast.success('added to Google Calendar — not booked with a provider.');await refresh();await qc.invalidateQueries({queryKey:['google-calendar']});}
+    catch(e){toast.error(e instanceof Error?e.message:'Google could not add the entry.');}finally{setBusy(false);}
+  }
 
   const byDay = useMemo(() => {
     const map = new Map<string, Tables<'calendar_events'>[]>();
@@ -73,7 +84,7 @@ function CalendarPage() {
     setBusy(true);
     try {
       await confirmHold({ data: { id } });
-      toast.success('appointment confirmed.');
+      toast.success('Beni calendar entry approved — not booked with a provider.');
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'something went wrong.');
@@ -102,17 +113,9 @@ function CalendarPage() {
 
         {/* Connection bar — honest state, no fake connection */}
         <section className="mt-10 border border-border bg-card rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <CalendarDays size={20} className="text-muted-foreground" />
-            <div>
-              <p className="text-sm">connect your google calendar</p>
-              <p className="text-xs text-muted-foreground">not connected · demo calendar mode — your holds and entries below are saved to beni only.</p>
-            </div>
-          </div>
-          <Button variant="outline" disabled title="Google Calendar connection is not configured yet">
-            connect calendar ↗
-          </Button>
+          <CalendarConnection />
         </section>
+        <GoogleSchedule />
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-10 mt-10">
           <div>
@@ -210,6 +213,7 @@ function CalendarPage() {
                       {e.notes && <p className="text-xs text-muted-foreground mt-1">{e.notes}</p>}
                     </div>
                     <div className="flex gap-2">
+                      {isBooked(e) && <Button size="sm" variant="outline" disabled={busy} onClick={()=>addToGoogle(e.id)}>{e.google_event_id?'verify Google entry':'add to Google'}</Button>}
                       {isHold(e) && (
                         <Button size="sm" variant="outline" disabled={busy} onClick={() => onConfirm(e.id)}>
                           <Check size={14} /> confirm
