@@ -1,0 +1,4 @@
+export function pageHead(title: string, description: string) { return { meta: [{ title: `${title} | beni` }, { name: 'description', content: description }, { property: 'og:title', content: `${title} | beni` }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary_large_image' }] }; }
+export function validatePdf(file: {name:string;size:number}) { if (!file.name.toLowerCase().endsWith('.pdf')) return 'Please choose a PDF document.'; if (file.size > 20 * 1024 * 1024) return 'Please choose a PDF smaller than 20 MB.'; return null; }
+export function confirmedUsage(visits: {confirmed:boolean;benefit_id:string|null}[], id:string) { return visits.filter(v=>v.confirmed && v.benefit_id===id).length; }
+export function canSendText(consent:boolean, connected:boolean) { return consent && connected; }
