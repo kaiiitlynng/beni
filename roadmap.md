@@ -39,6 +39,7 @@
 Not started: provider search beyond the providers table.
 
 # insurance management
+- [ ] Save the provided Linq webhook signing secret securely
 - [ ] Provide externally reachable signed Linq webhook URL — publication required
 - [ ] Prominent My Insurance navigation, dashboard actions and private PDF review
 - [ ] Real extraction with citations, retry and explicit active-plan confirmation
