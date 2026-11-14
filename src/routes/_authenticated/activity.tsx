@@ -64,7 +64,7 @@ function ActivityPage() {
   return (
     <AuthedShell>
       <main className="page-width max-w-3xl py-12 md:py-16">
-        <p className="text-xs text-muted-foreground mb-4">everything beni has done, in order.</p>
+        
         <h1 className="section-title">your latest from beni.</h1>
 
         {/* Conversation preview */}

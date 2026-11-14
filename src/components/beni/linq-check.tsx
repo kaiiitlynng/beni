@@ -138,7 +138,7 @@ export function LinqCheck() {
               label="a signed text has reached the webhook"
               hint={
                 s.lastWebhookAt
-                  ? `last received ${new Date(s.lastWebhookAt).toLocaleString()}`
+                  ? `last received ${new Date(s.lastWebhookAt).toLocaleString("en-US", { hour12: true })}`
                   : "nothing received yet"
               }
             />
