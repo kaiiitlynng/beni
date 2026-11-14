@@ -22,7 +22,7 @@ import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/d
 import { Route as AuthenticatedInsuranceRouteImport } from './routes/_authenticated/insurance'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as ApiLinqWebhookRouteImport } from './routes/api/linq-webhook'
+import { Route as ApiPublicLinqWebhookRouteImport } from './routes/api/public/linq-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,9 +88,9 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiLinqWebhookRoute = ApiLinqWebhookRouteImport.update({
-  id: '/api/linq-webhook',
-  path: '/api/linq-webhook',
+const ApiPublicLinqWebhookRoute = ApiPublicLinqWebhookRouteImport.update({
+  id: '/api/public/linq-webhook',
+  path: '/api/public/linq-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -107,7 +107,7 @@ export interface FileRoutesByFullPath {
   '/insurance': typeof AuthenticatedInsuranceRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/api/linq-webhook': typeof ApiLinqWebhookRoute
+  '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,7 +122,7 @@ export interface FileRoutesByTo {
   '/insurance': typeof AuthenticatedInsuranceRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/api/linq-webhook': typeof ApiLinqWebhookRoute
+  '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -139,7 +139,7 @@ export interface FileRoutesById {
   '/_authenticated/insurance': typeof AuthenticatedInsuranceRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/api/linq-webhook': typeof ApiLinqWebhookRoute
+  '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,7 +156,7 @@ export interface FileRouteTypes {
     | '/insurance'
     | '/onboarding'
     | '/settings'
-    | '/api/linq-webhook'
+    | '/api/public/linq-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,7 +171,7 @@ export interface FileRouteTypes {
     | '/insurance'
     | '/onboarding'
     | '/settings'
-    | '/api/linq-webhook'
+    | '/api/public/linq-webhook'
   id:
     | '__root__'
     | '/'
@@ -187,7 +187,7 @@ export interface FileRouteTypes {
     | '/_authenticated/insurance'
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
-    | '/api/linq-webhook'
+    | '/api/public/linq-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -195,7 +195,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ApiLinqWebhookRoute: typeof ApiLinqWebhookRoute
+  ApiPublicLinqWebhookRoute: typeof ApiPublicLinqWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -291,11 +291,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/linq-webhook': {
-      id: '/api/linq-webhook'
-      path: '/api/linq-webhook'
-      fullPath: '/api/linq-webhook'
-      preLoaderRoute: typeof ApiLinqWebhookRouteImport
+    '/api/public/linq-webhook': {
+      id: '/api/public/linq-webhook'
+      path: '/api/public/linq-webhook'
+      fullPath: '/api/public/linq-webhook'
+      preLoaderRoute: typeof ApiPublicLinqWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -333,7 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ApiLinqWebhookRoute: ApiLinqWebhookRoute,
+  ApiPublicLinqWebhookRoute: ApiPublicLinqWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
