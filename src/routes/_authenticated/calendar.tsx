@@ -1,357 +1,69 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
-import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, CalendarDays, MessageCircle, Plus, X, Check } from 'lucide-react';
-import { AuthedShell } from '@/components/beni/authed-shell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { hubQuery } from '@/lib/hub-query';
-import { pageHead } from '@/lib/beni';
-import { monthGrid, weekDays, addMonths, addWeeks, monthLabel, toKey } from '@/lib/calendar';
-import { eventDay, fmtTime, isHold, isBooked } from '@/lib/hub';
-import { createHold, confirmHold, deleteEvent } from '@/lib/benefits.functions';
-import { toast } from 'sonner';
-import type { Tables } from '@/integrations/supabase/types';
+import {createFileRoute,Link} from '@tanstack/react-router';
+import {useMemo,useState} from 'react';
+import {useQuery,useSuspenseQuery,useQueryClient} from '@tanstack/react-query';
 import {useServerFn} from '@tanstack/react-start';
+import {ChevronLeft,ChevronRight,Plus,MessageCircle,Check,Trash2,Clock,SlidersHorizontal} from 'lucide-react';
+import {AuthedShell} from '@/components/beni/authed-shell';
+import {Button} from '@/components/ui/button';
+import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {CalendarConnection} from '@/components/beni/calendar-connection';
-import {GoogleSchedule} from '@/components/beni/google-schedule';
+import {CalendarTimeline} from '@/components/beni/calendar-timeline';
+import {HoldDialog} from '@/components/beni/calendar-hold-dialog';
+import {hubQuery} from '@/lib/hub-query';
+import {googleCalendarRangeQuery} from '@/lib/google-calendar-query';
+import {pageHead} from '@/lib/beni';
+import {monthGrid,weekDays,monthLabel,toKey,addMonths,addWeeks} from '@/lib/calendar';
+import {dailyAvailability,dayBounds,dayLabel,entriesOnDay,entryInterval,slotDuration,type ScheduleEntry,type Interval} from '@/lib/calendar-schedule';
+import {fmtDate,fmtTime,isHold,isBooked} from '@/lib/hub';
+import {confirmHold,deleteEvent} from '@/lib/benefits.functions';
 import {exportAppointment} from '@/lib/calendar-integration.functions';
+import {toast} from 'sonner';
 
-export const Route = createFileRoute('/_authenticated/calendar')({
-  head: () => pageHead('care that fits your life', 'Your schedule, your benefits, beautifully coordinated.'),
-  loader: ({ context }) => context.queryClient.ensureQueryData(hubQuery),
-  component: CalendarPage,
-});
-
-type View = 'month' | 'week' | 'day';
-
-const MARKER = {
-  personal: 'bg-muted-foreground/50',
-  healthcare: 'bg-primary',
-  hold: 'bg-muted-foreground/30 border border-muted-foreground/60',
-} as const;
-
-function markerFor(e: Tables<'calendar_events'>) {
-  if (isHold(e)) return MARKER.hold;
-  if (e.kind === 'healthcare') return MARKER.healthcare;
-  return MARKER.personal;
-}
-
-function CalendarPage() {
-  const { data } = useSuspenseQuery(hubQuery);
-  const qc = useQueryClient();
-  const [view, setView] = useState<View>('month');
-  const [anchor, setAnchor] = useState(() => new Date());
-  const [selected, setSelected] = useState(() => toKey(new Date()));
-  const [holdForm, setHoldForm] = useState(false);
-  const [busy, setBusy] = useState(false);
+export const Route=createFileRoute('/_authenticated/calendar')({head:()=>pageHead('My Calendar','View your private schedule, find daily availability and approve tentative healthcare appointments.'),loader:({context})=>context.queryClient.ensureQueryData(hubQuery),component:CalendarPage});
+type View='month'|'week'|'day';
+function CalendarPage(){
+  const {data}=useSuspenseQuery(hubQuery),qc=useQueryClient();
+  const [view,setView]=useState<View>('week'),[anchor,setAnchor]=useState(()=>new Date()),[selected,setSelected]=useState(()=>toKey(new Date()));
+  const [holdStart,setHoldStart]=useState<Date|null>(null),[details,setDetails]=useState<ScheduleEntry|null>(null),[busy,setBusy]=useState(false),[hoursOpen,setHoursOpen]=useState(false),[from,setFrom]=useState(8),[to,setTo]=useState(20);
+  const days=useMemo(()=>view==='month'?monthGrid(anchor).map(d=>d.date):view==='week'?weekDays(anchor).map(d=>d.date):[anchor],[anchor,view]);
+  const first=days[0]??anchor,last=days[days.length-1]??anchor;
+  const range={start:dayBounds(first).start,end:dayBounds(last).end};
+  const google=useQuery(googleCalendarRangeQuery(range.start,range.end));
+  const entries:ScheduleEntry[]=useMemo(()=>[
+    ...(google.data?.events??[]).filter(e=>!data.events.some(b=>b.google_event_id&&e.id.endsWith(`:${b.google_event_id}`))).map(e=>({...e,type:'google' as const})),
+    ...data.events.map(e=>({id:e.id,title:e.title,start:e.starts_at,end:e.ends_at??new Date(Date.parse(e.starts_at)+3600000).toISOString(),type:isHold(e)?'hold' as const:'confirmed' as const,location:e.location,notes:e.notes})),
+  ],[google.data,data.events]);
+  const busyIntervals=useMemo(()=>[...(google.data?.busy??[]),...entries.filter(e=>e.type!=='google').map(entryInterval)],[google.data,entries]);
+  const availability=new Map(days.map(d=>[toKey(d),google.data?.connected?dailyAvailability(d,busyIntervals,from,to):[]]));
+  const selectedDate=new Date(`${selected}T12:00:00`);
+  const selectedSlots=google.data?.connected?dailyAvailability(selectedDate,busyIntervals,from,to):[];
+  const upcoming=data.events.filter(e=>e.kind==='healthcare'&&Date.parse(e.ends_at??e.starts_at)>=Date.now());
   const exportToGoogle=useServerFn(exportAppointment);
-  async function addToGoogle(id:string){
-    if(!window.confirm('Add this approved Beni appointment to Julie’s shared Google Calendar? Its title, location and time will be visible to all signed-in Beni users. This creates a calendar entry only, not a booking with a healthcare provider.'))return;
-    setBusy(true);
-    try{await exportToGoogle({data:{id,approved:true}});toast.success('added to Google Calendar — not booked with a provider.');await refresh();await qc.invalidateQueries({queryKey:['google-calendar']});}
-    catch(e){toast.error(e instanceof Error?e.message:'Google could not add the entry.');}finally{setBusy(false);}
-  }
-
-  const byDay = useMemo(() => {
-    const map = new Map<string, Tables<'calendar_events'>[]>();
-    for (const e of data.events) {
-      const k = eventDay(e);
-      map.set(k, [...(map.get(k) ?? []), e]);
-    }
-    return map;
-  }, [data.events]);
-
-  const days = view === 'month' ? monthGrid(anchor) : view === 'week' ? weekDays(anchor) : weekDays(anchor).filter((d) => d.key === toKey(anchor));
-  const selectedEvents = byDay.get(selected) ?? [];
-  const upcomingHolds = data.events.filter((e) => isHold(e) && e.starts_at >= new Date().toISOString());
-
-  function prev() {
-    setAnchor(view === 'month' ? addMonths(anchor, -1) : addWeeks(anchor, -1));
-  }
-  function next() {
-    setAnchor(view === 'month' ? addMonths(anchor, 1) : addWeeks(anchor, 1));
-  }
-  function today() {
-    const t = new Date();
-    setAnchor(t);
-    setSelected(toKey(t));
-  }
-  async function refresh() {
-    await qc.invalidateQueries({ queryKey: ['beni-hub'] });
-  }
-  async function onConfirm(id: string) {
-    setBusy(true);
-    try {
-      await confirmHold({ data: { id } });
-      toast.success('Beni calendar entry approved — not booked with a provider.');
-      await refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function onDelete(id: string) {
-    setBusy(true);
-    try {
-      await deleteEvent({ data: { id } });
-      toast.success('calendar entry removed.');
-      await refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <AuthedShell>
-      <main className="page-width py-12 md:py-16">
-        <p className="text-xs text-muted-foreground mb-4">your schedule, your benefits, beautifully coordinated.</p>
-        <h1 className="section-title">care that fits your life.</h1>
-
-        {/* Connection bar — honest state, no fake connection */}
-        <section className="mt-10 border border-border bg-card rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-          <CalendarConnection />
-        </section>
-        <GoogleSchedule />
-
-        <div className="grid lg:grid-cols-[1fr_320px] gap-10 mt-10">
-          <div>
-            {/* View controls */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" aria-label="Previous" onClick={prev}>
-                  <ChevronLeft />
-                </Button>
-                <h2 className="text-2xl min-w-44 text-center">{view === 'day' ? new Date(anchor).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : monthLabel(anchor)}</h2>
-                <Button variant="ghost" size="icon" aria-label="Next" onClick={next}>
-                  <ChevronRight />
-                </Button>
-                <Button variant="outline" size="sm" onClick={today}>
-                  today
-                </Button>
-              </div>
-              <div className="flex gap-1">
-                {(['month', 'week', 'day'] as const).map((v) => (
-                  <Button key={v} size="sm" variant={view === v ? 'default' : 'ghost'} aria-pressed={view === v} onClick={() => setView(v)}>
-                    {v}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground mb-1">
-              {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => (
-                <p key={d} className="text-center py-1">
-                  {d}
-                </p>
-              ))}
-            </div>
-            <div className={`grid grid-cols-7 gap-1 ${view === 'day' ? 'grid-cols-1' : ''}`} style={view === 'day' ? { gridTemplateColumns: '1fr' } : undefined}>
-              {days.map((d) => {
-                const evs = byDay.get(d.key) ?? [];
-                const isSel = d.key === selected;
-                return (
-                  <button
-                    key={d.key}
-                    onClick={() => {
-                      setSelected(d.key);
-                      if (view !== 'day') setAnchor(d.date);
-                    }}
-                    aria-label={`${d.date.toDateString()}${evs.length ? `, ${evs.length} entries` : ''}`}
-                    aria-pressed={isSel}
-                    className={`rounded-xl border p-2 text-left transition-colors ${view === 'month' ? 'min-h-20' : 'min-h-28'} ${
-                      isSel ? 'border-primary bg-accent/40' : 'border-border/60 hover:border-muted-foreground/40'
-                    } ${d.inMonth ? '' : 'opacity-40'}`}
-                  >
-                    <span className={`text-xs ${d.isToday ? 'bg-primary text-primary-foreground rounded-full px-1.5 py-0.5' : ''}`}>{d.date.getDate()}</span>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {evs.slice(0, view === 'month' ? 3 : 6).map((e) => (
-                        <span key={e.id} className={`w-2 h-2 rounded-full ${markerFor(e)}`} title={e.title} />
-                      ))}
-                    </div>
-                    {view !== 'month' &&
-                      evs.map((e) => (
-                        <p key={e.id} className="text-[11px] mt-1 truncate text-muted-foreground">
-                          {fmtTime(e.starts_at)} {e.title}
-                        </p>
-                      ))}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-5 mt-5 text-xs text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${MARKER.personal}`} /> personal
-              </span>
-              <span className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${MARKER.healthcare}`} /> healthcare appointment
-              </span>
-              <span className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${MARKER.hold}`} /> tentative beni hold
-              </span>
-            </div>
-
-            {/* Selected day detail */}
-            <section className="mt-8 border-t border-border pt-6">
-              <h3 className="text-2xl mb-4">{new Date(selected + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
-              {selectedEvents.length ? (
-                selectedEvents.map((e) => (
-                  <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 border border-border rounded-2xl p-4 mb-3">
-                    <div>
-                      <p className="text-sm">{e.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {fmtTime(e.starts_at)}
-                        {e.ends_at ? ` – ${fmtTime(e.ends_at)}` : ''}
-                        {e.location ? ` · ${e.location}` : ''} · {isHold(e) ? 'tentative hold — not booked' : isBooked(e) ? 'confirmed' : e.status}
-                      </p>
-                      {e.notes && <p className="text-xs text-muted-foreground mt-1">{e.notes}</p>}
-                    </div>
-                    <div className="flex gap-2">
-                      {isBooked(e) && <Button size="sm" variant="outline" disabled={busy} onClick={()=>addToGoogle(e.id)}>{e.google_event_id?'verify Google entry':'add to Google'}</Button>}
-                      {isHold(e) && (
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => onConfirm(e.id)}>
-                          <Check size={14} /> confirm
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" disabled={busy} aria-label={`Remove ${e.title}`} onClick={() => onDelete(e.id)}>
-                        <X size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">nothing on this day yet.</p>
-              )}
-              <Button variant="outline" className="mt-4" onClick={() => setHoldForm(true)}>
-                <Plus size={15} /> add calendar hold
-              </Button>
-            </section>
-          </div>
-
-          {/* Beni assistant panel */}
-          <aside className="border border-border bg-card rounded-2xl p-6 h-fit lg:sticky lg:top-8">
-            <h2 className="text-3xl mb-4">let’s find time for your care.</h2>
-            <p className="text-sm text-muted-foreground leading-6">
-              {upcomingHolds.length
-                ? `you have ${upcomingHolds.length} tentative ${upcomingHolds.length === 1 ? 'hold' : 'holds'} waiting. confirm one when the plan is real — a hold is never a booking.`
-                : data.profile?.availability
-                  ? `you told beni you prefer ${data.profile.availability}. free stretches in your week are good candidates for care.`
-                  : 'share your availability in settings and beni will spot good windows for care.'}
-            </p>
-            <div className="flex flex-col gap-2 mt-6">
-              <Button variant="outline" onClick={() => setHoldForm(true)}>
-                <Plus size={15} /> add calendar hold
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/demo">
-                  <MessageCircle size={15} /> text beni
-                </Link>
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-5 leading-5">
-              texting lives in the demo until messaging is connected. beni never books appointments — it suggests, you confirm.
-            </p>
-          </aside>
-        </div>
-
-        {holdForm && <HoldDialog benefits={data.benefits} defaultDate={selected} onClose={() => setHoldForm(false)} onSaved={refresh} />}
-      </main>
-    </AuthedShell>
-  );
-}
-
-function HoldDialog({ benefits, defaultDate, onClose, onSaved }: { benefits: Tables<'benefits'>[]; defaultDate: string; onClose: () => void; onSaved: () => Promise<void> }) {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(defaultDate);
-  const [time, setTime] = useState('10:00');
-  const [location, setLocation] = useState('');
-  const [notes, setNotes] = useState('');
-  const [benefitId, setBenefitId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    try {
-      await createHold({
-        data: {
-          title,
-          starts_at: new Date(`${date}T${time}`).toISOString(),
-          location: location || null,
-          notes: notes || null,
-          benefit_id: benefitId || null,
-        },
-      });
-      toast.success('hold saved. it’s tentative until you confirm it.');
-      await onSaved();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-label="Add calendar hold">
-      <form onSubmit={save} className="bg-card border border-border rounded-2xl p-7 w-full max-w-md space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl">a tentative hold.</h2>
-          <Button type="button" variant="ghost" size="icon" aria-label="Close" onClick={onClose}>
-            <X />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">a hold saves a spot. it is not a booked appointment.</p>
-        <label className="field">
-          appointment type
-          <Input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="dental cleaning" />
-        </label>
-        <div className="grid grid-cols-2 gap-4">
-          <label className="field">
-            date
-            <Input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          <label className="field">
-            time
-            <Input type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
-          </label>
-        </div>
-        <label className="field">
-          location
-          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="optional" />
-        </label>
-        <label className="field">
-          related benefit
-          <select value={benefitId} onChange={(e) => setBenefitId(e.target.value)} className="h-12 rounded-lg border border-border bg-background px-3 text-sm">
-            <option value="">none</option>
-            {benefits.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          notes
-          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
-        </label>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-        <Button disabled={busy} className="w-full">
-          {busy ? 'saving…' : 'save hold'}
-        </Button>
-      </form>
+  async function refresh(){await qc.invalidateQueries({queryKey:['beni-hub']});await qc.invalidateQueries({queryKey:['google-calendar']});}
+  function move(n:number){const next=view==='month'?addMonths(anchor,n):view==='week'?addWeeks(anchor,n):new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate()+n);setAnchor(next);setSelected(toKey(next));}
+  function select(date:Date,openDay=false){setSelected(toKey(date));if(openDay){setAnchor(date);setView('day');}}
+  function chooseSlot(slot:Interval){setHoldStart(new Date(slot.start));}
+  function addHold(){const start=new Date(`${selected}T10:00:00`);if(start.getTime()<Date.now()){start.setTime(Math.ceil((Date.now()+30*60000)/(30*60000))*30*60000);}setHoldStart(start);}
+  async function act(work:()=>Promise<unknown>,message:string){setBusy(true);try{await work();toast.success(message);setDetails(null);await refresh();}catch(e){toast.error(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
+  async function addToGoogle(id:string){if(!window.confirm('Add this approved appointment to your private Google Calendar? This creates a calendar entry only, not a booking with a healthcare provider.'))return;await act(()=>exportToGoogle({data:{id,approved:true}}),'Added to Google Calendar — not booked with a provider.');}
+  const localEntry=details?data.events.find(e=>e.id===details.id):undefined;
+  return <AuthedShell><main className="page-width calendar-page py-8 md:py-10">
+    <div className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-4xl md:text-5xl">My Calendar</h1><Button onClick={addHold}><Plus size={16}/>Add appointment</Button></div>
+    <div className="border-b border-border py-5 mb-5"><CalendarConnection range={range}/></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex items-center gap-1"><Button variant="ghost" size="icon" aria-label="Previous period" onClick={()=>move(-1)}><ChevronLeft/></Button><Button variant="ghost" size="icon" aria-label="Next period" onClick={()=>move(1)}><ChevronRight/></Button><h2 className="text-2xl mx-2">{view==='day'?dayLabel(anchor):monthLabel(anchor)}</h2><Button variant="outline" onClick={()=>{const d=new Date();setAnchor(d);setSelected(toKey(d));}}>Today</Button></div>
+      <div className="flex items-center gap-1" aria-label="Calendar view">{(['month','week','day'] as const).map(v=><Button key={v} variant={v===view?'default':'ghost'} aria-pressed={view===v} onClick={()=>{setView(v);if(v==='day')setAnchor(selectedDate);}}>{v[0]?.toUpperCase()}{v.slice(1)}</Button>)}<Button variant="ghost" size="icon" aria-label="Preferred scheduling hours" title="Preferred scheduling hours" aria-expanded={hoursOpen} onClick={()=>setHoursOpen(!hoursOpen)}><SlidersHorizontal size={17}/></Button></div>
     </div>
-  );
+    {hoursOpen&&<div className="flex flex-wrap items-end gap-4 border-y border-border py-4 mb-4"><label className="field">Scheduling starts<select value={from} onChange={e=>setFrom(Number(e.target.value))}>{Array.from({length:to},(_,i)=><option value={i} key={i}>{i%12||12}:00 {i<12?'AM':'PM'}</option>)}</select></label><label className="field">Scheduling ends<select value={to} onChange={e=>setTo(Number(e.target.value))}>{Array.from({length:24-from},(_,i)=>i+from+1).map(i=><option value={i} key={i}>{i%12||12}:00 {i<12||i===24?'AM':'PM'}</option>)}</select></label></div>}
+    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs mb-4 text-muted-foreground">{[['google','Google · Busy'],['confirmed','Confirmed appointment'],['hold','Tentative hold'],['free','Available']].map(([type,label])=><span className="flex items-center gap-2" key={type}><span className={`calendar-legend calendar-${type}`}/>{label}</span>)}</div>
+    {google.isFetching&&<p role="status" className="text-sm text-muted-foreground mb-3">Refreshing Google Calendar…</p>}
+    {view==='month'?<div className="calendar-month"><div className="grid grid-cols-7 text-xs text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><span key={d} className="text-center py-3">{d}</span>)}</div><div className="grid grid-cols-7">{days.map(date=>{const dayEntries=entriesOnDay(entries,date);return <Button variant="ghost" key={toKey(date)} aria-label={`${dayLabel(date)}, ${dayEntries.length} events`} aria-pressed={selected===toKey(date)} onClick={()=>select(date,true)} className={`calendar-month-day ${selected===toKey(date)?'bg-accent':''} ${date.getMonth()!==anchor.getMonth()?'text-muted-foreground':''}`}><span className={toKey(date)===toKey(new Date())?'calendar-today':''}>{date.getDate()}</span><span className="calendar-month-indicators">{dayEntries.slice(0,3).map(e=><span key={e.id} className={`calendar-month-item calendar-${e.type}`}><span className="hidden md:inline">{e.title}</span><span className="md:hidden">•</span></span>)}{dayEntries.length>3&&<span className="text-[11px]">+{dayEntries.length-3}</span>}</span></Button>;})}</div></div>:<CalendarTimeline days={days} entries={entries} availability={availability} selected={selected} onSelect={d=>select(d)} onSlot={chooseSlot} onDetails={setDetails}/>}
+    <section className="pt-7 pb-6 border-b border-border"><div className="flex flex-wrap items-baseline justify-between gap-2 mb-4"><h2 className="text-3xl">Available appointment times</h2><p className="text-sm text-muted-foreground">{dayLabel(selectedDate)}</p></div>
+      {google.data?.connected?selectedSlots.length?<div className="flex flex-wrap gap-3">{selectedSlots.map(slot=><Button variant="outline" key={slot.start} className="h-auto min-h-12 py-3 justify-start gap-3" onClick={()=>chooseSlot(slot)}><Clock size={16}/><span className="text-left">{fmtTime(slot.start)} – {fmtTime(slot.end)}<span className="block text-xs font-normal text-muted-foreground mt-1">Available · {slotDuration(slot)}</span></span><Plus size={15}/></Button>)}</div>:<p className="text-sm text-muted-foreground">No available blocks of 30 minutes or longer during your preferred hours.</p>:<p className="text-sm text-muted-foreground">{google.data?.authorized===false?'Google availability is not available for this account. You can still manage your private Beni appointments.':'Availability is unavailable until Google Calendar can be read. Refresh to try again.'}</p>}
+    </section>
+    <section className="py-7 border-b border-border"><h2 className="text-3xl mb-5">Upcoming appointments</h2>{upcoming.length?<div className="grid md:grid-cols-2 gap-4">{upcoming.map(e=><article key={e.id} className="border border-border rounded-lg p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="text-2xl break-words">{e.title}</h3><p className="text-sm text-muted-foreground mt-2">{fmtDate(e.starts_at)} · {fmtTime(e.starts_at)}{e.ends_at?` – ${fmtTime(e.ends_at)}`:''}</p><p className="text-xs mt-2 text-muted-foreground">{isHold(e)?'Tentative hold — not booked with a provider':'Confirmed Beni calendar entry'}</p></div><Button variant="ghost" size="icon" aria-label={`View details: ${e.title}`} onClick={()=>setDetails(entries.find(entry=>entry.id===e.id)??null)}><ChevronRight/></Button></div><div className="flex flex-wrap gap-2 mt-4">{isHold(e)&&<Button variant="outline" disabled={busy} onClick={()=>act(()=>confirmHold({data:{id:e.id}}),'Beni appointment confirmed — no provider booking was made.')}><Check size={15}/>Confirm appointment</Button>}{isBooked(e)&&google.data?.authorized&&<Button variant="outline" disabled={busy} onClick={()=>addToGoogle(e.id)}>{e.google_event_id?'Verify Google entry':'Add to Google'}</Button>}</div></article>)}</div>:<p className="text-sm text-muted-foreground">No upcoming healthcare appointments.</p>}</section>
+    <div className="flex flex-wrap gap-3 pt-6"><Button variant="outline" onClick={addHold}><Plus size={16}/>Add appointment</Button><Button variant="ghost" asChild><Link to="/demo"><MessageCircle size={16}/>Ask Beni</Link></Button></div>
+    {holdStart&&<HoldDialog benefits={data.benefits} start={holdStart} onClose={()=>setHoldStart(null)} onSaved={refresh}/>}
+    {details&&<Dialog open onOpenChange={open=>{if(!open)setDetails(null);}}><DialogContent className="w-[calc(100%-32px)] max-h-[85dvh] overflow-y-auto"><DialogTitle className="text-3xl pr-6 break-words">{details.title}</DialogTitle><DialogDescription>{details.type==='google'?'Google Calendar event':details.type==='hold'?'Tentative Beni hold — not booked with a provider':'Confirmed Beni calendar entry — not a provider booking'}</DialogDescription><p className="text-sm">{dayLabel(details.start)} · {details.allDay?'All day':`${fmtTime(details.start)} – ${fmtTime(details.end)}`}</p>{details.location&&<p className="text-sm break-words">{details.location}</p>}{details.notes&&<p className="text-sm break-words">{details.notes}</p>}<div className="flex flex-wrap gap-3">{details.url&&<Button asChild variant="outline"><a href={details.url} target="_blank" rel="noopener noreferrer">View in Google Calendar</a></Button>}{localEntry&&<>{isHold(localEntry)&&<Button disabled={busy} onClick={()=>act(()=>confirmHold({data:{id:localEntry.id}}),'Beni appointment confirmed — not booked with a provider.')}><Check/>Confirm appointment</Button>}{isBooked(localEntry)&&google.data?.authorized&&<Button disabled={busy} variant="outline" onClick={()=>addToGoogle(localEntry.id)}>Add to Google</Button>}<Button variant="ghost" disabled={busy} onClick={()=>{if(window.confirm('Remove this Beni entry? Any exported Google event stays in Google Calendar.'))void act(()=>deleteEvent({data:{id:localEntry.id}}),'Beni entry removed.');}}><Trash2 size={16}/>Remove hold</Button></>}</div></DialogContent></Dialog>}
+  </main></AuthedShell>;
 }
