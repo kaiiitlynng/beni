@@ -17,7 +17,7 @@ export async function googleCall(path: string, init?: RequestInit) {
   }
   return res;
 }
-const calendarSchema = z.object({ items: z.array(z.object({ id:z.string(), summary:z.string().optional(), accessRole:z.string().optional(), timeZone:z.string().optional() })).default([]) });
+const calendarSchema = z.object({ items: z.array(z.object({ id:z.string(), primary:z.boolean().optional(), summary:z.string().optional(), accessRole:z.string().optional(), timeZone:z.string().optional() })).default([]) });
 const eventSchema = z.object({ id:z.string(), summary:z.string().optional(), status:z.string().optional(), start:z.object({ dateTime:z.string().optional(),date:z.string().optional() }), end:z.object({ dateTime:z.string().optional(),date:z.string().optional() }), htmlLink:z.string().optional() });
 const eventsSchema = z.object({items:z.array(eventSchema).default([])});
 const freeSchema = z.object({ calendars:z.record(z.object({busy:z.array(z.object({start:z.string(),end:z.string()})).default([]),errors:z.array(z.object({domain:z.string().optional(),reason:z.string().optional()})).optional()})) });
@@ -25,7 +25,8 @@ export async function readGoogleSchedule() {
   try {
     const calResponse=await googleCall('/users/me/calendarList?maxResults=50');
     if (!calResponse.ok) throw new Error(`Google could not read your calendars (${calResponse.status}).`);
-    const calendars=calendarSchema.parse(await calResponse.json()).items.filter(c=>c.accessRole!=='freeBusyReader');
+    const calendars=calendarSchema.parse(await calResponse.json()).items.filter(c=>c.primary===true);
+    if (!calendars.length) throw new Error('Julie’s primary Google Calendar could not be found. Check the shared connector account, then refresh.');
     const start=new Date().toISOString(), end=new Date(Date.now()+7*86400000).toISOString();
     const events=(await Promise.all(calendars.map(async c=>{
       const res=await googleCall(`/calendars/${encodeURIComponent(c.id)}/events?singleEvents=true&orderBy=startTime&timeMin=${encodeURIComponent(start)}&timeMax=${encodeURIComponent(end)}&maxResults=100`);

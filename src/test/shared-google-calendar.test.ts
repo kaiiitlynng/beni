@@ -3,6 +3,18 @@ import { googleCall, readGoogleSchedule } from '../lib/google-calendar.server';
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 describe('shared Google Calendar transport', () => {
+  it('reads only the shared account primary calendar, excluding subscriptions', async () => {
+    vi.stubEnv('GOOGLE_CALENDAR_API_KEY', 'test-connector');
+    vi.stubEnv('LOVABLE_API_KEY', 'test-app');
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(Response.json({items:[{id:'jseaman@berkeley.edu',primary:true},{id:'holidays'}]}))
+      .mockResolvedValueOnce(Response.json({items:[]}))
+      .mockResolvedValueOnce(Response.json({calendars:{'jseaman@berkeley.edu':{busy:[]}}}));
+    vi.stubGlobal('fetch', fetcher);
+    expect((await readGoogleSchedule()).connected).toBe(true);
+    expect(fetcher.mock.calls[1]?.[0]).toContain('/calendars/jseaman%40berkeley.edu/events?');
+    expect(JSON.parse(fetcher.mock.calls[2]?.[1].body).items).toEqual([{id:'jseaman@berkeley.edu'}]);
+  });
   it('uses the workspace connector rather than any per-user connection', async () => {
     vi.stubEnv('GOOGLE_CALENDAR_API_KEY', 'test-connector');
     vi.stubEnv('LOVABLE_API_KEY', 'test-app');

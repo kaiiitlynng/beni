@@ -33,10 +33,10 @@
 - [ ] End-to-end check with a public sample plan
 
 # real integrations
-- [ ] Switch calendar reads to Julie's shared connector, remove personal OAuth flow, and verify signed-in events and availability
+- [x] Switch calendar reads to Julie's shared connector, unlink personal OAuth client, and verify signed-in primary-calendar events, availability, refresh and mobile layout; 14 checks passed
 - [x] Restore existing Google connector OAuth controls, secure per-user event/availability reads and explicitly approved export
 - [x] Verify signed-in Google consent launch, canceled consent stays disconnected, persisted Beni approval, export cancellation and desktop/mobile controls; 13 relevant tests pass
-- [ ] Complete Google end-to-end consent, event readback and export — blocked: user must authorize their Google account through Connect Calendar; no saved user Google connection exists yet
+- [ ] Verify an explicitly approved export to Julie's shared calendar — requires an appointment the user wants to publish to the shared calendar; real event reads and availability verified
 - [x] Linq consent-gated test message and appointment reminders — built in `src/lib/server/nudge.server.ts` (secrets still to set)
 - [x] Signed Linq reply webhook, private history and AI responses — built in `src/routes/api/public/linq-webhook.ts` + `src/lib/server/agent.server.ts`; extend these rather than adding a second webhook or agent
 - [ ] Verify real integrations and document credential/setup blockers
