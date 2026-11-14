@@ -21,7 +21,10 @@
 Subsequent requested phases: AI document extraction, Linq authenticated webhook and outbound messaging, Google Calendar connection (Composio or App User Connector), same-agent demo fallback, and appointment assistance. These are not enabled in the foundation.
 
 # real integrations
-- [ ] Secure per-user Google Calendar consent, upcoming events, availability and approved event export
-- [ ] Linq secret setup, consent-gated test message and real appointment reminders
-- [ ] Signed Linq reply webhook, private history and AI responses
-- [ ] Verify real integrations and document credential/setup blockers
+- [x] Secure per-user Google Calendar consent, upcoming events, availability and approved event export code
+- [x] Linq secret setup, consent-gated test message and scheduled real appointment reminder code
+- [x] Signed Linq reply webhook, private history and queued AI responses
+- [x] Verify safeguards, Google authorization launch, Linq account access and real AI inference
+- [ ] Google event read/write end-to-end — waiting for user to complete Google consent
+- [ ] Linq phone delivery — saved phone lacks a country code; user must correct it before a real test can send
+- [ ] Live Linq replies and reminders — publish Beni, register public webhook with version 2026-02-03, then save provider-issued LINQ_WEBHOOK_SECRET

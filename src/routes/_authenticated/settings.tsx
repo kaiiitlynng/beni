@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { User, Bell, FileText, Plug, ShieldCheck, CalendarDays, MessageCircle } from 'lucide-react';
 import { AuthedShell } from '@/components/beni/authed-shell';
-import { PersonalFields, type ProfileFields } from '@/components/beni/profile-form';
+import { PersonalFields, profileInput, type ProfileFields } from '@/components/beni/profile-form';
 import { Preferences } from '@/components/beni/preferences';
 import { Upload } from '@/components/beni/upload';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ function Settings() {
 
   const p = data.profile;
   const [profile, setProfile] = useState<ProfileFields>(
-    p ?? { first_name: '', phone: '', organization: '', current_city: '', home_city: '', sms_consent: false, break_start: null, break_end: null, availability: '', interests: [], reminder_preferences: [] },
+    p ? profileInput(p) : { first_name: '', phone: '', organization: '', current_city: '', home_city: '', sms_consent: false, break_start: null, break_end: null, availability: '', interests: [], reminder_preferences: [] },
   );
   const [notify, setNotify] = useState<NotifyFields>({
     notify_sms: p?.notify_sms ?? true,

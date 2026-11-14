@@ -250,13 +250,13 @@ function CalendarPage() {
                 <Plus size={15} /> add calendar hold
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/demo">
-                  <MessageCircle size={15} /> text beni
+                <Link to="/settings">
+                  <MessageCircle size={15} /> messaging settings
                 </Link>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-5 leading-5">
-              texting lives in the demo until messaging is connected. beni never books appointments — it suggests, you confirm.
+              real texting requires your opt-in and a verified phone. beni never books providers — calendar entries remain separate.
             </p>
           </aside>
         </div>
