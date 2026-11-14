@@ -1,7 +1,7 @@
 export function googleCalendarFailure(status: number, rawBody: string) {
   let body: Record<string, unknown> = {};
   try { body = JSON.parse(rawBody); } catch { /* Provider may return plain text. */ }
-  const error = body.error && typeof body.error === 'object' ? body.error : body;
+  const error = body['error'] && typeof body['error'] === 'object' ? body['error'] : body;
   const detail = JSON.stringify(error);
   if (/accessNotConfigured|SERVICE_DISABLED|API has not been used|is disabled/i.test(detail)) {
     return { cause: 'api_disabled', message: 'Google Calendar API is disabled for Beni’s Google OAuth project. The app owner must enable Google Calendar API in Google Cloud Console → APIs & Services → Library, using the project that owns the configured OAuth client. Wait a few minutes, then refresh your calendar; reconnecting alone will not fix this.' };
