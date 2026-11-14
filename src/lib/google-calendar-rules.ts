@@ -3,9 +3,9 @@ export function approvedGoogleExport(event: { status: string; user_confirmed: bo
 }
 export function availableWindows(busy: { start: string; end: string }[], start: string, end: string) {
   const lo = Date.parse(start), hi = Date.parse(end);
-  const intervals = busy.map(b => [Math.max(lo, Date.parse(b.start)), Math.min(hi, Date.parse(b.end))]).filter(([a,b]) => Number.isFinite(a) && Number.isFinite(b) && b > a).sort((a,b) => a[0] - b[0]);
+  const intervals = busy.map(b => ({start:Math.max(lo, Date.parse(b.start)),end:Math.min(hi, Date.parse(b.end))})).filter(b => Number.isFinite(b.start) && Number.isFinite(b.end) && b.end > b.start).sort((a,b) => a.start - b.start);
   const windows: { start: string; end: string }[] = []; let cursor = lo;
-  for (const [a,b] of intervals) { if (a > cursor && a - cursor >= 30 * 60000) windows.push({ start: new Date(cursor).toISOString(), end: new Date(a).toISOString() }); cursor = Math.max(cursor,b); }
+  for (const {start:a,end:b} of intervals) { if (a > cursor && a - cursor >= 30 * 60000) windows.push({ start: new Date(cursor).toISOString(), end: new Date(a).toISOString() }); cursor = Math.max(cursor,b); }
   if (hi - cursor >= 30 * 60000) windows.push({ start: new Date(cursor).toISOString(), end: new Date(hi).toISOString() });
   return windows;
 }
