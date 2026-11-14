@@ -1,6 +1,9 @@
 export function googleCalendarFailure(status: number, rawBody: string) {
   let body: Record<string, unknown> = {};
-  try { body = JSON.parse(rawBody); } catch { /* Provider may return plain text. */ }
+  try {
+    const parsed: unknown = JSON.parse(rawBody);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) body = parsed as Record<string, unknown>;
+  } catch { /* Provider may return plain text. */ }
   const error = body['error'] && typeof body['error'] === 'object' ? body['error'] : body;
   const detail = JSON.stringify(error);
   if (/accessNotConfigured|SERVICE_DISABLED|API has not been used|is disabled/i.test(detail)) {
@@ -14,6 +17,15 @@ export function googleCalendarFailure(status: number, rawBody: string) {
   }
   if (status === 429 || /rateLimitExceeded|quotaExceeded|RESOURCE_EXHAUSTED/i.test(detail)) {
     return { cause: 'quota', message: 'Google Calendar’s request limit was reached. Try refreshing later; the app owner can check the Google Calendar API quota if this continues.' };
+  }
+  if (/notFound|not_found/i.test(detail)) {
+    return { cause: 'calendar_missing', message: 'Google could not find one of the requested calendars. Check that it still exists and is shared with your connected Google account, then refresh. Beni will not show availability until every calendar can be checked.' };
+  }
+  if (/forbidden|permission_denied/i.test(detail)) {
+    return { cause: 'calendar_permission', message: 'Google denied access to a calendar. Check its sharing permissions for your connected Google account; adding events requires permission to edit that calendar. Reconnecting will not change calendar-sharing permissions.' };
+  }
+  if (status >= 500 || /backendError|internalError/i.test(detail)) {
+    return { cause: 'provider_unavailable', message: 'Google Calendar is temporarily unavailable. Refresh later. If you were adding an appointment, check Google Calendar before retrying; Beni uses the same event identifier to avoid duplicate entries.' };
   }
   return { cause: 'unknown', message: `Google Calendar denied this request (HTTP ${status}). The app owner should check the Google Calendar API settings and calendar-sharing permissions; the response did not identify missing OAuth scopes or a disabled API.` };
 }

@@ -15,4 +15,13 @@ describe('Google Calendar failure diagnosis', () => {
   it('does not recommend reconnecting for quota errors', () => {
     expect(googleCalendarFailure(403, JSON.stringify({ error: { errors: [{ reason: 'rateLimitExceeded' }] } })).cause).toBe('quota');
   });
+  it('diagnoses calendar-level availability errors even when the outer response succeeded', () => {
+    expect(googleCalendarFailure(403, JSON.stringify({error:{errors:[{reason:'notFound'}]}})).cause).toBe('calendar_missing');
+    expect(googleCalendarFailure(403, JSON.stringify({error:{errors:[{reason:'forbidden'}]}})).cause).toBe('calendar_permission');
+    expect(googleCalendarFailure(403, JSON.stringify({error:{errors:[{reason:'internalError'}]}})).cause).toBe('provider_unavailable');
+  });
+  it('safely handles malformed and null error responses', () => {
+    expect(googleCalendarFailure(403, 'null').cause).toBe('unknown');
+    expect(googleCalendarFailure(503, '<html>unavailable</html>').cause).toBe('provider_unavailable');
+  });
 });
