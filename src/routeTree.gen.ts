@@ -19,6 +19,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCareRouteImport } from './routes/_authenticated/care'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/demo'
+import { Route as AuthenticatedInsuranceRouteImport } from './routes/_authenticated/insurance'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiLinqWebhookRouteImport } from './routes/api/linq-webhook'
@@ -72,6 +73,11 @@ const AuthenticatedDemoRoute = AuthenticatedDemoRouteImport.update({
   path: '/demo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInsuranceRoute = AuthenticatedInsuranceRouteImport.update({
+  id: '/insurance',
+  path: '/insurance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/care': typeof AuthenticatedCareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/demo': typeof AuthenticatedDemoRoute
+  '/insurance': typeof AuthenticatedInsuranceRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/linq-webhook': typeof ApiLinqWebhookRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/care': typeof AuthenticatedCareRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/demo': typeof AuthenticatedDemoRoute
+  '/insurance': typeof AuthenticatedInsuranceRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/linq-webhook': typeof ApiLinqWebhookRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/care': typeof AuthenticatedCareRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/demo': typeof AuthenticatedDemoRoute
+  '/_authenticated/insurance': typeof AuthenticatedInsuranceRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/linq-webhook': typeof ApiLinqWebhookRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/care'
     | '/dashboard'
     | '/demo'
+    | '/insurance'
     | '/onboarding'
     | '/settings'
     | '/api/linq-webhook'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/care'
     | '/dashboard'
     | '/demo'
+    | '/insurance'
     | '/onboarding'
     | '/settings'
     | '/api/linq-webhook'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/_authenticated/care'
     | '/_authenticated/dashboard'
     | '/_authenticated/demo'
+    | '/_authenticated/insurance'
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
     | '/api/linq-webhook'
@@ -258,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDemoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/insurance': {
+      id: '/_authenticated/insurance'
+      path: '/insurance'
+      fullPath: '/insurance'
+      preLoaderRoute: typeof AuthenticatedInsuranceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -289,6 +308,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCareRoute: typeof AuthenticatedCareRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDemoRoute: typeof AuthenticatedDemoRoute
+  AuthenticatedInsuranceRoute: typeof AuthenticatedInsuranceRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
@@ -300,6 +320,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCareRoute: AuthenticatedCareRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDemoRoute: AuthenticatedDemoRoute,
+  AuthenticatedInsuranceRoute: AuthenticatedInsuranceRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
