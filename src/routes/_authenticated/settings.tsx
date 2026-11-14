@@ -189,6 +189,7 @@ function Settings() {
         {tab === 'documents' && (
           <section className="space-y-8">
             <h2 className="text-3xl">your insurance documents.</h2>
+            <Button asChild variant="outline"><Link to="/insurance">manage my insurance</Link></Button>
             {data.plans.length ? (
               <div className="space-y-3">
                 {data.plans.map((plan) => (

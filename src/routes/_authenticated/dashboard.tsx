@@ -11,7 +11,7 @@ import { greeting, fmtDate, isHold } from '@/lib/hub';
 import {activeInsurance} from '@/lib/insurance-rules';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
-  head: () => pageHead('your care, all in one place', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
+  head: () => pageHead('your beni home', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
   loader: ({ context }) => context.queryClient.ensureQueryData(hubQuery),
   component: Dashboard,
 });

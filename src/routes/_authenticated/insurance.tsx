@@ -33,7 +33,8 @@ function InsurancePage() {
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const qc = useQueryClient();
   const activate = useServerFn(activateInsurance), extract = useServerFn(extractPlan), view = useServerFn(viewInsurancePdf);
-  const review = data.plans.find(p => p.id === selectedId) ?? data.plans.find(p => !p.is_active && p.status === 'ready');
+  const newest = data.plans[0];
+  const review = data.plans.find(p => p.id === selectedId) ?? (newest?.status === 'ready' && !newest.is_active ? newest : undefined);
   const { data: reviewBenefits = [] } = useQuery({ queryKey: ['insurance-review', review?.id], enabled: Boolean(review), queryFn: async () => {
     if (!review) return [];
     const result = await supabase.from('benefits').select('*').eq('plan_id', review.id);
