@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { hubQuery } from '@/lib/hub-query';
 import { pageHead } from '@/lib/beni';
 import { toast } from 'sonner';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => pageHead('your preferences', 'Manage your personal information, notifications, documents, connections and privacy.'),
@@ -62,7 +63,7 @@ function Settings() {
     timezone: p?.timezone ?? 'America/Los_Angeles',
   });
 
-  async function save(fields: Record<string, unknown>, ok: string) {
+  async function save(fields: TablesUpdate<'profiles'>, ok: string) {
     setBusy(true);
     const { error } = await supabase.from('profiles').update(fields).eq('id', p?.id ?? '');
     setBusy(false);
