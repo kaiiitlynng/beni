@@ -33,6 +33,7 @@
 - [ ] End-to-end check with a public sample plan
 
 # real integrations
+- [ ] Switch calendar reads to Julie's shared connector, remove personal OAuth flow, and verify signed-in events and availability
 - [x] Restore existing Google connector OAuth controls, secure per-user event/availability reads and explicitly approved export
 - [x] Verify signed-in Google consent launch, canceled consent stays disconnected, persisted Beni approval, export cancellation and desktop/mobile controls; 13 relevant tests pass
 - [ ] Complete Google end-to-end consent, event readback and export — blocked: user must authorize their Google account through Connect Calendar; no saved user Google connection exists yet

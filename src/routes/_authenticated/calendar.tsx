@@ -47,7 +47,7 @@ function CalendarPage() {
   const [busy, setBusy] = useState(false);
   const exportToGoogle=useServerFn(exportAppointment);
   async function addToGoogle(id:string){
-    if(!window.confirm('Add this approved Beni appointment to Google Calendar? This creates a calendar entry only, not a booking with a healthcare provider.'))return;
+    if(!window.confirm('Add this approved Beni appointment to Julie’s shared Google Calendar? Its title, location and time will be visible to all signed-in Beni users. This creates a calendar entry only, not a booking with a healthcare provider.'))return;
     setBusy(true);
     try{await exportToGoogle({data:{id,approved:true}});toast.success('added to Google Calendar — not booked with a provider.');await refresh();await qc.invalidateQueries({queryKey:['google-calendar']});}
     catch(e){toast.error(e instanceof Error?e.message:'Google could not add the entry.');}finally{setBusy(false);}
