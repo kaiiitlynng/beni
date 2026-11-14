@@ -40,5 +40,5 @@ export function addWeeks(d: Date, n: number): Date {
 }
 
 export function monthLabel(d: Date): string {
-  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
