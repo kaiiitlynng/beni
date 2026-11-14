@@ -14,7 +14,352 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      benefits: {
+        Row: {
+          category: string
+          cost: string | null
+          coverage_status: string
+          description: string | null
+          hidden_perk: boolean
+          id: string
+          name: string
+          plan_id: string
+          restrictions: string | null
+          source_page: number
+          user_id: string
+          visit_limit: number | null
+        }
+        Insert: {
+          category: string
+          cost?: string | null
+          coverage_status: string
+          description?: string | null
+          hidden_perk?: boolean
+          id?: string
+          name: string
+          plan_id: string
+          restrictions?: string | null
+          source_page: number
+          user_id: string
+          visit_limit?: number | null
+        }
+        Update: {
+          category?: string
+          cost?: string | null
+          coverage_status?: string
+          description?: string | null
+          hidden_perk?: boolean
+          id?: string
+          name?: string
+          plan_id?: string
+          restrictions?: string | null
+          source_page?: number
+          user_id?: string
+          visit_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefits_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans_uploaded"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          id: string
+          starts_at: string
+          status: string
+          title: string
+          user_confirmed: boolean
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          starts_at: string
+          status?: string
+          title: string
+          user_confirmed?: boolean
+          user_id: string
+        }
+        Update: {
+          id?: string
+          starts_at?: string
+          status?: string
+          title?: string
+          user_confirmed?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          delivery_status: string
+          direction: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string
+          direction: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string
+          direction?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans_uploaded: {
+        Row: {
+          created_at: string
+          deductible: string | null
+          file_name: string
+          id: string
+          out_of_pocket_max: string | null
+          plan_name: string | null
+          plan_type: string | null
+          provider: string | null
+          status: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deductible?: string | null
+          file_name: string
+          id?: string
+          out_of_pocket_max?: string | null
+          plan_name?: string | null
+          plan_type?: string | null
+          provider?: string | null
+          status?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deductible?: string | null
+          file_name?: string
+          id?: string
+          out_of_pocket_max?: string | null
+          plan_name?: string | null
+          plan_type?: string | null
+          provider?: string | null
+          status?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_uploaded_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          availability: string
+          break_end: string | null
+          break_start: string | null
+          created_at: string
+          current_city: string
+          first_name: string
+          home_city: string
+          id: string
+          interests: string[]
+          onboarding_complete: boolean
+          organization: string
+          phone: string
+          reminder_preferences: string[]
+          sms_consent: boolean
+        }
+        Insert: {
+          availability?: string
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string
+          current_city?: string
+          first_name?: string
+          home_city?: string
+          id: string
+          interests?: string[]
+          onboarding_complete?: boolean
+          organization?: string
+          phone?: string
+          reminder_preferences?: string[]
+          sms_consent?: boolean
+        }
+        Update: {
+          availability?: string
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string
+          current_city?: string
+          first_name?: string
+          home_city?: string
+          id?: string
+          interests?: string[]
+          onboarding_complete?: boolean
+          organization?: string
+          phone?: string
+          reminder_preferences?: string[]
+          sms_consent?: boolean
+        }
+        Relationships: []
+      }
+      providers: {
+        Row: {
+          booking_url: string | null
+          city: string | null
+          contact: string | null
+          id: string
+          name: string
+          network_verified: boolean
+          user_id: string
+        }
+        Insert: {
+          booking_url?: string | null
+          city?: string | null
+          contact?: string | null
+          id?: string
+          name: string
+          network_verified?: boolean
+          user_id: string
+        }
+        Update: {
+          booking_url?: string | null
+          city?: string | null
+          contact?: string | null
+          id?: string
+          name?: string
+          network_verified?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "providers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          id: string
+          remind_at: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          remind_at?: string | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          remind_at?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visits: {
+        Row: {
+          benefit_id: string | null
+          confirmed: boolean
+          created_at: string
+          id: string
+          user_id: string
+          visit_date: string
+        }
+        Insert: {
+          benefit_id?: string | null
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          user_id: string
+          visit_date: string
+        }
+        Update: {
+          benefit_id?: string | null
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          user_id?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
