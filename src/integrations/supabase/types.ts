@@ -200,6 +200,9 @@ export type Database = {
           direction: string
           id: string
           provider_message_id: string | null
+          recipient_phone: string | null
+          reply_error: string | null
+          reply_status: string
           user_id: string
         }
         Insert: {
@@ -210,6 +213,9 @@ export type Database = {
           direction: string
           id?: string
           provider_message_id?: string | null
+          recipient_phone?: string | null
+          reply_error?: string | null
+          reply_status?: string
           user_id: string
         }
         Update: {
@@ -220,6 +226,9 @@ export type Database = {
           direction?: string
           id?: string
           provider_message_id?: string | null
+          recipient_phone?: string | null
+          reply_error?: string | null
+          reply_status?: string
           user_id?: string
         }
         Relationships: []
