@@ -5,10 +5,12 @@ export const Route=createFileRoute('/api/public/linq/webhook')({server:{handlers
   GET:async()=>Response.json({service:'beni Linq webhook',version:'2026-02-03'}),
   POST:async({request})=>{
     const secret=process.env['LINQ_WEBHOOK_SECRET'];
+    const {linqWebhookPreflight,verifyLinqSignature}=await import('@/lib/linq-signature.server');
+    const rejection=linqWebhookPreflight(request.headers,secret);
+    if(rejection)return rejection;
     if(!secret)return new Response('Webhook signing secret is not configured.',{status:503});
     const raw=await request.text();
     if(raw.length>262144)return new Response('Payload too large',{status:413});
-    const {verifyLinqSignature}=await import('@/lib/linq-signature.server');
     if(!verifyLinqSignature(request.headers,raw,secret))return new Response('Invalid signature',{status:401});
     let json:unknown;
     try {json=JSON.parse(raw);}catch{return new Response('Invalid JSON',{status:400});}

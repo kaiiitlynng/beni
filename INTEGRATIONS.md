@@ -45,13 +45,13 @@ Managed job `beni-linq-replies-and-reminders` calls `/api/public/linq/process` e
 
 ## Verification performed
 
-- 14 tests pass: existing safeguards plus consent, notification switch, approval gating, phone format, overlapping availability, signature tampering/replay.
+- 16 tests pass: existing safeguards plus consent, notification switch, approval gating, phone format, overlapping availability, signature tampering/replay and incomplete webhook setup handling.
 - Signed-in Settings and Calendar render without browser errors; visual design preserved.
 - Connect Google Calendar reaches `accounts.google.com`; cancellation produces a visible error. Full consent, event reads, free/busy and export remain unverified until the user authorizes their own Google account.
 - Linq real line lookup succeeds (HTTP 200, one line).
 - Clicking Send Test Message correctly blocks the existing phone because it lacks a country code. No message was sent and no delivery is claimed.
 - Real AI inference succeeds and states that Google Calendar entries do not book doctors.
-- Cron endpoint rejects unauthorized callers (HTTP 401). Webhook fails closed while signing secret is missing (HTTP 503). Unit tests verify actual signed payload verification, tampering and five-minute replay tolerance.
+- Cron endpoint and unsigned webhook probes reject unauthorized callers (HTTP 401). Signed provider deliveries remain retryable while the signing secret is missing (HTTP 503); they are never acknowledged as processed. Unit tests verify signature tampering, five-minute replay tolerance and incomplete setup handling.
 - Current hosted preview rejects external callers (HTTP 401); live webhook delivery, phone replies, AI-to-phone delivery and scheduled reminders remain blocked by publication, webhook registration/signing secret, and phone verification.
 
 Official Linq contracts: https://docs.linqapp.com/channel/imessage/guides/messaging/sending-messages/ and https://docs.linqapp.com/channel/imessage/guides/webhooks/.

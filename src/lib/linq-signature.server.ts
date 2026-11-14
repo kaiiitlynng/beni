@@ -1,4 +1,13 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
+export function linqWebhookPreflight(headers:Headers,secret:string|undefined):Response|null {
+  // Anonymous probes are not provider deliveries. Reject them before setup checks.
+  if(!headers.get('webhook-id')||!headers.get('webhook-timestamp')||!headers.get('webhook-signature')) {
+    return Response.json({error:'Missing webhook signature.'},{status:401});
+  }
+  // Preserve retryable failure for actual deliveries until verification is configured.
+  if(!secret) return Response.json({error:'Webhook signing secret is not configured.'},{status:503,headers:{'Retry-After':'60'}});
+  return null;
+}
 export function verifyLinqSignature(headers:Headers,body:string,secret:string,now=Date.now()) {
   const id=headers.get('webhook-id');
   const timestamp=headers.get('webhook-timestamp');

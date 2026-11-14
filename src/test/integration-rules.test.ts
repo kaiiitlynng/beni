@@ -1,8 +1,16 @@
 import {describe,it,expect} from 'vitest';
 import {createHmac} from 'node:crypto';
 import {textingAllowed,approvedCalendarEntry,availableWindows,normalizePhone} from '@/lib/integration-rules';
-import {verifyLinqSignature} from '@/lib/linq-signature.server';
+import {verifyLinqSignature,linqWebhookPreflight} from '@/lib/linq-signature.server';
 describe('real integration safeguards',()=>{
+  it('rejects unsigned webhook probes without a server error when setup is incomplete',()=>{
+    expect(linqWebhookPreflight(new Headers(),undefined)?.status).toBe(401);
+  });
+  it('keeps signed deliveries retryable until the webhook secret is configured',()=>{
+    const headers=new Headers({'webhook-id':'event-1','webhook-timestamp':'1794693600','webhook-signature':'v1,signature'});
+    expect(linqWebhookPreflight(headers,undefined)?.status).toBe(503);
+    expect(linqWebhookPreflight(headers,'configured-secret')).toBeNull();
+  });
   it('requires opt-in for real and test messages',()=>{expect(textingAllowed({sms_consent:false,notify_sms:true})).toBe(false);expect(textingAllowed({sms_consent:true,notify_sms:true})).toBe(true);});
   it('honors the text notification master switch',()=>{expect(textingAllowed({sms_consent:true,notify_sms:false})).toBe(false);});
   it('exports only user-approved entries, never holds',()=>{expect(approvedCalendarEntry({user_confirmed:false,status:'hold'})).toBe(false);expect(approvedCalendarEntry({user_confirmed:true,status:'hold'})).toBe(false);expect(approvedCalendarEntry({user_confirmed:true,status:'confirmed'})).toBe(true);});
