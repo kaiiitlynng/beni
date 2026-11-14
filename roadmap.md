@@ -1,4 +1,14 @@
 # beni foundation
+ 
+# Calendar usability and accessibility
+- [ ] Restrict linked Google calendar reads and exports to Julie’s verified account
+- [ ] English dates and 12-hour local times across Beni; remove decorative page slogans
+- [ ] Default weekly timeline, daily timeline, interactive month grid and event details
+- [ ] Daily availability within customizable 8 AM–8 PM hours, excluding busy/past periods and gaps below 30 minutes
+- [ ] Accessible slot-to-hold workflow with duration; preserve explicit Google export approval
+- [ ] Test calendar rules, private access, real refresh, hold persistence, and desktop/mobile layouts
+
+# beni foundation (completed)
 - [x] Editorial landing page and messaging preview
 - [x] Profile sign-in and three-step onboarding
 - [x] Private insurance PDF upload and stored preferences
