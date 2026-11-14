@@ -9,6 +9,7 @@ import { hubQuery } from '@/lib/hub-query';
 import { pageHead, confirmedUsage } from '@/lib/beni';
 import { greeting, fmtDate, isHold } from '@/lib/hub';
 import {activeInsurance} from '@/lib/insurance-rules';
+import {CalendarConnection} from '@/components/beni/calendar-connection';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   head: () => pageHead('your beni home', 'Your insurance, benefits, upcoming care and beni’s suggestions in one calm place.'),
@@ -70,14 +71,7 @@ function Dashboard() {
               <p className="text-sm text-muted-foreground mt-2 max-w-md">let beni work around your schedule.</p>
             </div>
           </div>
-          <div className="flex flex-col items-start gap-2">
-            <Button asChild>
-              <Link to="/calendar">
-                connect google calendar <ArrowUpRight />
-              </Link>
-            </Button>
-            <p className="text-xs text-muted-foreground">not connected yet — setup continues on your calendar page.</p>
-          </div>
+          <CalendarConnection />
         </section>
 
         {/* Insurance overview */}

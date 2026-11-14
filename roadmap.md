@@ -32,7 +32,9 @@
 - [ ] End-to-end check with a public sample plan
 
 # real integrations
-- [ ] Secure per-user Google Calendar consent, upcoming events, availability and approved event export
+- [x] Restore existing Google connector OAuth controls, secure per-user event/availability reads and explicitly approved export
+- [x] Verify signed-in Google consent launch, canceled consent stays disconnected, persisted Beni approval, export cancellation and desktop/mobile controls; 13 relevant tests pass
+- [ ] Complete Google end-to-end consent, event readback and export — blocked: user must authorize their Google account through Connect Calendar; no saved user Google connection exists yet
 - [x] Linq consent-gated test message and appointment reminders — built in `src/lib/server/nudge.server.ts` (secrets still to set)
 - [x] Signed Linq reply webhook, private history and AI responses — built in `src/routes/api/public/linq-webhook.ts` + `src/lib/server/agent.server.ts`; extend these rather than adding a second webhook or agent
 - [ ] Verify real integrations and document credential/setup blockers

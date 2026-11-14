@@ -1,0 +1,2 @@
+ALTER TABLE public.calendar_events DROP CONSTRAINT calendar_events_status_check;
+ALTER TABLE public.calendar_events ADD CONSTRAINT calendar_events_status_check CHECK (status IN ('hold','planned','provider_confirmed','confirmed'));

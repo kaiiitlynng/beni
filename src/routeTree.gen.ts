@@ -23,6 +23,7 @@ import { Route as AuthenticatedInsuranceRouteImport } from './routes/_authentica
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiPublicLinqWebhookRouteImport } from './routes/api/public/linq-webhook'
+import { Route as ApiPublicOauthGoogleReturnRouteImport } from './routes/api/public/oauth/google/return'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -93,6 +94,12 @@ const ApiPublicLinqWebhookRoute = ApiPublicLinqWebhookRouteImport.update({
   path: '/api/public/linq-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOauthGoogleReturnRoute =
+  ApiPublicOauthGoogleReturnRouteImport.update({
+    id: '/api/public/oauth/google/return',
+    path: '/api/public/oauth/google/return',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
+  '/api/public/oauth/google/return': typeof ApiPublicOauthGoogleReturnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,6 +131,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
+  '/api/public/oauth/google/return': typeof ApiPublicOauthGoogleReturnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/public/linq-webhook': typeof ApiPublicLinqWebhookRoute
+  '/api/public/oauth/google/return': typeof ApiPublicOauthGoogleReturnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/settings'
     | '/api/public/linq-webhook'
+    | '/api/public/oauth/google/return'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/settings'
     | '/api/public/linq-webhook'
+    | '/api/public/oauth/google/return'
   id:
     | '__root__'
     | '/'
@@ -188,6 +200,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/settings'
     | '/api/public/linq-webhook'
+    | '/api/public/oauth/google/return'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -196,6 +209,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicLinqWebhookRoute: typeof ApiPublicLinqWebhookRoute
+  ApiPublicOauthGoogleReturnRoute: typeof ApiPublicOauthGoogleReturnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -298,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLinqWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/oauth/google/return': {
+      id: '/api/public/oauth/google/return'
+      path: '/api/public/oauth/google/return'
+      fullPath: '/api/public/oauth/google/return'
+      preLoaderRoute: typeof ApiPublicOauthGoogleReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -334,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicLinqWebhookRoute: ApiPublicLinqWebhookRoute,
+  ApiPublicOauthGoogleReturnRoute: ApiPublicOauthGoogleReturnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

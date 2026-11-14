@@ -12,6 +12,7 @@ import { hubQuery } from '@/lib/hub-query';
 import { pageHead } from '@/lib/beni';
 import { toast } from 'sonner';
 import type { TablesUpdate } from '@/integrations/supabase/types';
+import {CalendarConnection} from '@/components/beni/calendar-connection';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => pageHead('your preferences', 'Manage your personal information, notifications, documents, connections and privacy.'),
@@ -219,16 +220,7 @@ function Settings() {
           <section className="space-y-6">
             <h2 className="text-3xl">connected accounts.</h2>
             <div className="border border-border rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <CalendarDays size={20} className="text-muted-foreground" />
-                <div>
-                  <p className="text-sm">google calendar</p>
-                  <p className="text-xs text-muted-foreground mt-1">not connected · connection setup is not configured yet</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" disabled title="Google Calendar connection is not configured yet">
-                connect ↗
-              </Button>
+              <CalendarConnection />
             </div>
             <div className="border border-border rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
