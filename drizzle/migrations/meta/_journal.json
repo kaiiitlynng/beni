@@ -29,6 +29,13 @@
       "when": 1794697193756,
       "tag": "0003_google_calendar_confirmed_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794701762987,
+      "tag": "0004_recurring_reminders",
+      "breakpoints": true
     }
   ]
 }

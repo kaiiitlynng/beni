@@ -8,9 +8,9 @@ export const getHub = createServerFn({method:'GET'}).middleware([requireSupabase
   return {profile:profile.data,plans:plans.data??[],benefits:currentBenefits(benefits.data??[],activeInsurance(plans.data??[])?.id),visits:visits.data??[],events:events.data??[],messages:messages.data??[],reminders:reminders.data??[],messagingConnected:Boolean(process.env['LINQ_API_TOKEN']&&process.env['LINQ_FROM_NUMBER'])&&Boolean(profile.data?.sms_consent),beniNumber:process.env['LINQ_FROM_NUMBER']??null};
 });
 
-type HoldInput={title:string;starts_at:string;ends_at?:string|null;location?:string|null;notes?:string|null;benefit_id?:string|null};
+type HoldInput={title:string;starts_at:string;ends_at?:string|null;location?:string|null;notes?:string|null;benefit_id?:string|null;provider_confirmed?:boolean};
 export const createHold=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:HoldInput)=>d).handler(async({context,data})=>{
- const {error}=await context.supabase.from('calendar_events').insert({user_id:context.userId,title:data.title,starts_at:data.starts_at,ends_at:data.ends_at??null,kind:'healthcare',location:data.location??null,notes:data.notes??null,benefit_id:data.benefit_id??null,status:'hold',user_confirmed:false});
+ const {error}=await context.supabase.from('calendar_events').insert({user_id:context.userId,title:data.title,starts_at:data.starts_at,ends_at:data.ends_at??null,kind:'healthcare',location:data.location??null,notes:data.notes??null,benefit_id:data.benefit_id??null,status:data.provider_confirmed?'provider_confirmed':'hold',user_confirmed:Boolean(data.provider_confirmed)});
  if(error)throw new Error('Your calendar hold could not be saved. Please try again.');
 });
 
@@ -43,4 +43,25 @@ export const addReminder=createServerFn({method:'POST'}).middleware([requireSupa
 export const completeReminder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:{id:string})=>d).handler(async({context,data})=>{
  const {error}=await context.supabase.from('reminders').update({status:'done'}).eq('id',data.id).eq('user_id',context.userId);
  if(error)throw new Error('Your reminder could not be updated. Please try again.');
+});
+
+type ReminderInput={id?:string;title:string;remind_at:string;frequency:'once'|'weekly'|'monthly'|'quarterly'|'semiannual'|'annual'|'custom';interval_days?:number|null;benefit_id?:string|null;end_date?:string|null;method:'text'|'in_app'};
+export const saveReminder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:ReminderInput)=>{
+ if(!d.title?.trim())throw new Error('Give your reminder a title.');
+ if(Number.isNaN(Date.parse(d.remind_at)))throw new Error('Choose a start date and time.');
+ if(d.frequency==='custom'&&!(d.interval_days&&d.interval_days>0&&d.interval_days<=730))throw new Error('Custom reminders need a number of days between 1 and 730.');
+ if(d.end_date&&Date.parse(`${d.end_date}T23:59:59`)<Date.parse(d.remind_at))throw new Error('The end date must be after the start.');
+ return d;
+}).handler(async({context,data})=>{
+ const row={title:data.title.trim(),remind_at:data.remind_at,frequency:data.frequency,interval_days:data.frequency==='custom'?data.interval_days??null:null,benefit_id:data.benefit_id||null,end_date:data.end_date||null,method:data.method,status:'open'};
+ const {error}=data.id?await context.supabase.from('reminders').update(row).eq('id',data.id).eq('user_id',context.userId):await context.supabase.from('reminders').insert({...row,user_id:context.userId});
+ if(error)throw new Error('Your reminder could not be saved. Please try again.');
+});
+export const setReminderPaused=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:{id:string;paused:boolean})=>d).handler(async({context,data})=>{
+ const {error}=await context.supabase.from('reminders').update({paused:data.paused}).eq('id',data.id).eq('user_id',context.userId);
+ if(error)throw new Error('Your reminder could not be updated. Please try again.');
+});
+export const deleteReminder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:{id:string})=>d).handler(async({context,data})=>{
+ const {error}=await context.supabase.from('reminders').delete().eq('id',data.id).eq('user_id',context.userId);
+ if(error)throw new Error('Your reminder could not be deleted. Please try again.');
 });

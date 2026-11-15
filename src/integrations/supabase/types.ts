@@ -472,22 +472,52 @@ export type Database = {
       }
       reminders: {
         Row: {
+          benefit_id: string | null
+          created_at: string
+          delivery_status: string | null
+          end_date: string | null
+          frequency: string
           id: string
+          interval_days: number | null
+          last_sent_at: string | null
+          method: string
+          paused: boolean
           remind_at: string | null
+          sending_at: string | null
           status: string
           title: string
           user_id: string
         }
         Insert: {
+          benefit_id?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          end_date?: string | null
+          frequency?: string
           id?: string
+          interval_days?: number | null
+          last_sent_at?: string | null
+          method?: string
+          paused?: boolean
           remind_at?: string | null
+          sending_at?: string | null
           status?: string
           title: string
           user_id: string
         }
         Update: {
+          benefit_id?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          end_date?: string | null
+          frequency?: string
           id?: string
+          interval_days?: number | null
+          last_sent_at?: string | null
+          method?: string
+          paused?: boolean
           remind_at?: string | null
+          sending_at?: string | null
           status?: string
           title?: string
           user_id?: string

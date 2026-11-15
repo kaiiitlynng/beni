@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { TextBeni } from '@/components/beni/text-beni';
 import { useEffect } from 'react';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CalendarDays, Sparkles, FileText, MessageCircle } from 'lucide-react';
@@ -59,7 +60,7 @@ function Dashboard() {
     <AuthedShell>
       <main className="page-width py-12 md:py-16">
         
-        <h1 className="section-title">{greeting(data.profile?.first_name)}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-4"><h1 className="section-title">{greeting(data.profile?.first_name)}</h1><TextBeni number={data.beniNumber} size="sm" /></div>
         
 
         {/* Calendar connection card */}

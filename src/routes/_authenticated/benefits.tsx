@@ -10,6 +10,20 @@ import { pageHead, confirmedUsage } from '@/lib/beni';
 import { CATEGORIES, coverageTone } from '@/lib/hub';
 import type { Tables } from '@/integrations/supabase/types';
 import { activeInsurance } from '@/lib/insurance-rules';
+import { ReminderDialog } from '@/components/beni/reminders-manager';
+import { CalendarPlus, Bell } from 'lucide-react';
+
+function BenefitActions({ benefit }: { benefit: Tables<'benefits'> }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useSuspenseQuery(hubQuery);
+  return (
+    <div className="flex flex-wrap gap-3 mt-6">
+      <Button asChild><Link to="/calendar" search={{ benefit: benefit.id }}><CalendarPlus size={16} />Find time for this</Link></Button>
+      <Button variant="outline" onClick={() => setOpen(true)}><Bell size={16} />Remind me to use this</Button>
+      {open && <ReminderDialog benefits={data.benefits} benefitId={benefit.id} onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 export const Route = createFileRoute('/_authenticated/benefits')({
   head: () => pageHead('everything you’re covered for', 'Browse, search and filter the benefits documented in your insurance plan.'),
@@ -81,7 +95,7 @@ function BenefitsPage() {
             </div>
           )}
           {selected.hidden_perk && <p className="text-sm mt-8">worth exploring: your document covers this often-overlooked benefit · page {selected.source_page}.</p>}
-          {selected.coverage_status === 'covered' && <Button asChild className="mt-6"><Link to="/calendar">plan an appointment</Link></Button>}
+          {selected.coverage_status === 'covered' && <BenefitActions benefit={selected} />}
           <p className="text-xs text-muted-foreground mt-10">coverage details come from your uploaded document. usage is recorded by you, not verified with your insurer.</p>
         </main>
       </AuthedShell>
