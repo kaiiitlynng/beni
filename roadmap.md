@@ -61,3 +61,10 @@ Not started: provider search beyond the providers table.
 - [x] Real extraction with citations, retry and explicit active-plan confirmation
 - [x] One active plan across benefits, recommendations and text agent; preserve history
 - [x] Verify actual PDF upload, extraction, replacement and refresh end-to-end; 25 tests pass; fictional fixtures removed
+
+# Activity, calendar, reminders (Nov 2026 brief)
+- [x] P1: Text Beni (Activity + dashboard), Ask Beni removed, top + Add Appointment, status choice, benefit → Find time / Remind me
+- [x] P1: Verified insurance benefits with page citations and recent real Linq text round-trips
+- [x] P2: Recurring reminders (create/edit/pause/complete/delete), 15-minute sender honoring consent and hours
+- [ ] P2: "What Am I Missing?" AI analysis and prominent dashboard recommendations
+- [ ] P3: Judge demo mode, dashboard polish

@@ -50,3 +50,4 @@ use the editor.
 
 - Calendar display uses browser-local calendar-day arithmetic and explicit en-US 12-hour formatting; one range query supplies the timeline and daily free-time calculation so all views stay synchronized.
 - Calendar timeline and hold dialog are focused presentation modules; Google busy intervals plus owned Beni entries determine daily availability, never inferred empty data after a provider failure.
+- Reminders recur via `src/lib/reminder-rules.ts`; `/api/public/cron/reminders` (cron-secret auth, every 15 min) claims due rows atomically, texts only with consent/switch/preferred hours, then advances. Delivery columns are server-only grants.
