@@ -8,9 +8,9 @@ export const getHub = createServerFn({method:'GET'}).middleware([requireSupabase
   return {profile:profile.data,plans:plans.data??[],benefits:currentBenefits(benefits.data??[],activeInsurance(plans.data??[])?.id),visits:visits.data??[],events:events.data??[],messages:messages.data??[],reminders:reminders.data??[],messagingConnected:Boolean(process.env['LINQ_API_TOKEN']&&process.env['LINQ_FROM_NUMBER'])&&Boolean(profile.data?.sms_consent),beniNumber:process.env['LINQ_FROM_NUMBER']??null};
 });
 
-type HoldInput={title:string;starts_at:string;ends_at?:string|null;location?:string|null;notes?:string|null;benefit_id?:string|null};
+type HoldInput={title:string;starts_at:string;ends_at?:string|null;location?:string|null;notes?:string|null;benefit_id?:string|null;provider_confirmed?:boolean};
 export const createHold=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:HoldInput)=>d).handler(async({context,data})=>{
- const {error}=await context.supabase.from('calendar_events').insert({user_id:context.userId,title:data.title,starts_at:data.starts_at,ends_at:data.ends_at??null,kind:'healthcare',location:data.location??null,notes:data.notes??null,benefit_id:data.benefit_id??null,status:'hold',user_confirmed:false});
+ const {error}=await context.supabase.from('calendar_events').insert({user_id:context.userId,title:data.title,starts_at:data.starts_at,ends_at:data.ends_at??null,kind:'healthcare',location:data.location??null,notes:data.notes??null,benefit_id:data.benefit_id??null,status:data.provider_confirmed?'provider_confirmed':'hold',user_confirmed:Boolean(data.provider_confirmed)});
  if(error)throw new Error('Your calendar hold could not be saved. Please try again.');
 });
 

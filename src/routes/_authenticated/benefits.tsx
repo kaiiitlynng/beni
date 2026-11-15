@@ -10,6 +10,30 @@ import { pageHead, confirmedUsage } from '@/lib/beni';
 import { CATEGORIES, coverageTone } from '@/lib/hub';
 import type { Tables } from '@/integrations/supabase/types';
 import { activeInsurance } from '@/lib/insurance-rules';
+import { useQueryClient } from '@tanstack/react-query';
+import { addReminder } from '@/lib/benefits.functions';
+import { toast } from 'sonner';
+import { CalendarPlus, Bell } from 'lucide-react';
+
+function BenefitActions({ benefit }: { benefit: Tables<'benefits'> }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  async function remind() {
+    setBusy(true);
+    try {
+      const at = new Date(Date.now() + 7 * 86400000); at.setHours(10, 0, 0, 0);
+      await addReminder({ data: { title: `Schedule ${benefit.name.toLowerCase()}`, remind_at: at.toISOString() } });
+      toast.success(`Reminder set for ${at.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.`);
+      await qc.invalidateQueries({ queryKey: ['beni-hub'] });
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Please try again.'); } finally { setBusy(false); }
+  }
+  return (
+    <div className="flex flex-wrap gap-3 mt-6">
+      <Button asChild><Link to="/calendar" search={{ benefit: benefit.id }}><CalendarPlus size={16} />Find time for this</Link></Button>
+      <Button variant="outline" disabled={busy} onClick={remind}><Bell size={16} />Remind me to use this</Button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute('/_authenticated/benefits')({
   head: () => pageHead('everything you’re covered for', 'Browse, search and filter the benefits documented in your insurance plan.'),
@@ -81,7 +105,7 @@ function BenefitsPage() {
             </div>
           )}
           {selected.hidden_perk && <p className="text-sm mt-8">worth exploring: your document covers this often-overlooked benefit · page {selected.source_page}.</p>}
-          {selected.coverage_status === 'covered' && <Button asChild className="mt-6"><Link to="/calendar">plan an appointment</Link></Button>}
+          {selected.coverage_status === 'covered' && <BenefitActions benefit={selected} />}
           <p className="text-xs text-muted-foreground mt-10">coverage details come from your uploaded document. usage is recorded by you, not verified with your insurer.</p>
         </main>
       </AuthedShell>
