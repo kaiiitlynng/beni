@@ -44,3 +44,24 @@ export const completeReminder=createServerFn({method:'POST'}).middleware([requir
  const {error}=await context.supabase.from('reminders').update({status:'done'}).eq('id',data.id).eq('user_id',context.userId);
  if(error)throw new Error('Your reminder could not be updated. Please try again.');
 });
+
+type ReminderInput={id?:string;title:string;remind_at:string;frequency:'once'|'weekly'|'monthly'|'quarterly'|'semiannual'|'annual'|'custom';interval_days?:number|null;benefit_id?:string|null;end_date?:string|null;method:'text'|'in_app'};
+export const saveReminder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:ReminderInput)=>{
+ if(!d.title?.trim())throw new Error('Give your reminder a title.');
+ if(Number.isNaN(Date.parse(d.remind_at)))throw new Error('Choose a start date and time.');
+ if(d.frequency==='custom'&&!(d.interval_days&&d.interval_days>0&&d.interval_days<=730))throw new Error('Custom reminders need a number of days between 1 and 730.');
+ if(d.end_date&&Date.parse(`${d.end_date}T23:59:59`)<Date.parse(d.remind_at))throw new Error('The end date must be after the start.');
+ return d;
+}).handler(async({context,data})=>{
+ const row={title:data.title.trim(),remind_at:data.remind_at,frequency:data.frequency,interval_days:data.frequency==='custom'?data.interval_days??null:null,benefit_id:data.benefit_id||null,end_date:data.end_date||null,method:data.method,status:'open'};
+ const {error}=data.id?await context.supabase.from('reminders').update(row).eq('id',data.id).eq('user_id',context.userId):await context.supabase.from('reminders').insert({...row,user_id:context.userId});
+ if(error)throw new Error('Your reminder could not be saved. Please try again.');
+});
+export const setReminderPaused=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:{id:string;paused:boolean})=>d).handler(async({context,data})=>{
+ const {error}=await context.supabase.from('reminders').update({paused:data.paused}).eq('id',data.id).eq('user_id',context.userId);
+ if(error)throw new Error('Your reminder could not be updated. Please try again.');
+});
+export const deleteReminder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:{id:string})=>d).handler(async({context,data})=>{
+ const {error}=await context.supabase.from('reminders').delete().eq('id',data.id).eq('user_id',context.userId);
+ if(error)throw new Error('Your reminder could not be deleted. Please try again.');
+});
