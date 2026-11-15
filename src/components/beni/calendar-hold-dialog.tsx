@@ -6,7 +6,7 @@ import {createHold,addReminder} from '@/lib/benefits.functions';
 import {toKey} from '@/lib/calendar';
 import {toast} from 'sonner';
 import type {Tables} from '@/integrations/supabase/types';
-export function HoldDialog({benefits,start,benefitId:initialBenefit,onClose,onSaved}:{benefits:Tables<'benefits'>[];start:Date;benefitId?:string;onClose:()=>void;onSaved:()=>Promise<void>}) {
+export function HoldDialog({benefits,start,benefitId:initialBenefit,onClose,onSaved}:{benefits:Tables<'benefits'>[];start:Date;benefitId?:string|undefined;onClose:()=>void;onSaved:()=>Promise<void>}) {
   const [title,setTitle]=useState(()=>benefits.find(b=>b.id===initialBenefit)?.name??''),[date,setDate]=useState(toKey(start)),[time,setTime]=useState(`${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}`);
   const [duration,setDuration]=useState(30),[location,setLocation]=useState(''),[notes,setNotes]=useState(''),[benefitId,setBenefitId]=useState(initialBenefit&&benefits.some(b=>b.id===initialBenefit)?initialBenefit:''),[providerConfirmed,setProviderConfirmed]=useState(false),[remind,setRemind]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
   async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{
