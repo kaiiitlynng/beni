@@ -27,3 +27,21 @@ export const exportAppointment=createServerFn({method:'POST'}).middleware([requi
   if(saved.error) throw new Error('The entry was added to Google, but Beni could not save its link. Retry safely to reconnect it.');
   return {url:verified.htmlLink??null};
 });
+const isoTime = z.string().refine(v => Number.isFinite(Date.parse(v)), 'Choose a valid date and time.');
+export const updateGoogleAppointment=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({
+  id:z.string().uuid(),
+  approved:z.literal(true),
+  changes:z.object({title:z.string().max(200).optional(),starts_at:isoTime.optional(),ends_at:isoTime.nullable().optional(),location:z.string().max(300).nullable().optional(),notes:z.string().max(2000).nullable().optional()}),
+})).handler(async({context,data})=>{
+  const {data:auth,error}=await context.supabase.auth.getUser();
+  if(error || !canAccessLinkedCalendar(auth.user)) throw new Error('This Google Calendar connection is private to its verified owner.');
+  const {updateBeniGoogleEvent}=await import('./server/google-event-sync.server');
+  const {url}=await updateBeniGoogleEvent(context.userId,data.id,data.changes);
+  return {url};
+});
+export const deleteGoogleAppointment=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),approved:z.literal(true)})).handler(async({context,data})=>{
+  const {data:auth,error}=await context.supabase.auth.getUser();
+  if(error || !canAccessLinkedCalendar(auth.user)) throw new Error('This Google Calendar connection is private to its verified owner.');
+  const {deleteBeniGoogleEvent}=await import('./server/google-event-sync.server');
+  await deleteBeniGoogleEvent(context.userId,data.id);
+});

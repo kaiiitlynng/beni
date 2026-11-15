@@ -46,6 +46,7 @@ use the editor.
 - Google Calendar uses the linked workspace connector only after server-side verification of the owning authenticated account for both reads and exports; other accounts receive no provider data, and personal OAuth endpoints remain removed.
 - Diagnose Google Calendar failures from the provider response body in the shared transport so reads and exports show actionable causes without changing OAuth or retrying writes.
 - Google exports require an owned confirmed Beni entry plus explicit export approval and deterministic provider event IDs, preventing tentative exports and retry duplicates without claiming provider bookings.
+- Google edits and deletes (`src/lib/server/google-event-sync.server.ts`) apply only to Beni-created events (`beni…` IDs) and need the verified owner plus explicit approval: a web action, or a stored `pending_action` yes by text. Google is written first, then the local row, so retries are safe; user-made Google events stay read-only.
 
 - Calendar display uses browser-local calendar-day arithmetic and explicit en-US 12-hour formatting; one range query supplies the timeline and daily free-time calculation so all views stay synchronized.
 - Calendar timeline and hold dialog are focused presentation modules; Google busy intervals plus owned Beni entries determine daily availability, never inferred empty data after a provider failure.

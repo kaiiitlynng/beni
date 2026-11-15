@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { availableWindows } from './google-calendar-rules';
 import { googleCalendarFailure } from './google-calendar-errors';
-export async function googleCall(path: string, init?: RequestInit) {
+export async function googleCall(path: string, init?: RequestInit, okStatuses: number[] = []) {
   const apiKey = process.env['GOOGLE_CALENDAR_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
   if (!apiKey || !lovableKey) throw new Error("Google Calendar is not configured. The app owner must check the existing Google connection in Lovable.");
@@ -9,7 +9,7 @@ export async function googleCall(path: string, init?: RequestInit) {
   headers.set('Authorization', `Bearer ${lovableKey}`);
   headers.set('X-Connection-Api-Key', apiKey);
   const res = await fetch(`https://connector-gateway.lovable.dev/google_calendar/calendar/v3${path}`, { ...init, headers });
-  if (!res.ok && !(res.status === 409 && init?.method === 'POST')) {
+  if (!res.ok && !(res.status === 409 && init?.method === 'POST') && !okStatuses.includes(res.status)) {
     const rawBody = await res.clone().text();
     const failure = googleCalendarFailure(res.status, rawBody);
     console.error('[google-calendar] Provider request failed', { path, status: res.status, cause: failure.cause, body: rawBody });

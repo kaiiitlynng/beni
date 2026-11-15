@@ -13,9 +13,15 @@ import {
   type Profile,
 } from "./store.server";
 import { createCalendarHold, logConfirmedVisit } from "./care.server";
+import {
+  deleteBeniGoogleEvent,
+  isLinkedOwner,
+  updateBeniGoogleEvent,
+} from "./google-event-sync.server";
+import { googleEventPatch, isEditableBeniGoogleEvent } from "../google-calendar-rules";
 import { parseConfirmation, type PendingAction } from "../agent-rules";
 import { confirmedUsage } from "../beni";
-import { activeInsurance, currentBenefits } from '../insurance-rules';
+import { activeInsurance, currentBenefits } from "../insurance-rules";
 
 const SYSTEM = `you are beni, a warm, text-first health insurance assistant for college students and young adults. you are texting the user over imessage/sms.
 
@@ -36,6 +42,7 @@ hard rules:
 - don't recommend treatments or diagnose from symptoms. for urgent symptoms, tell them to contact a clinician or call 911.
 - don't assume cosmetic services are covered.
 - to save anything (calendar hold or visit), call the matching propose_ tool, then ask the user to reply yes or no. never claim something is saved before they confirm.
+- you can move, edit or delete a calendar entry only if it is marked in_google: true, and only by calling propose_google_event_change or propose_google_event_delete, then asking yes or no. you cannot change any other google calendar events; say so if asked. changing a calendar entry never reschedules or cancels anything with the provider.
 - if they ask for something outside insurance and care planning, gently steer back.`;
 
 type Db = Awaited<ReturnType<typeof admin>>;
@@ -47,7 +54,7 @@ async function loadContext(db: Db, profile: Profile) {
       .from("plans_uploaded")
       .select("*")
       .eq("user_id", userId)
-      .eq('is_active', true)
+      .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(1),
     db.from("benefits").select("*").eq("user_id", userId),
@@ -79,6 +86,8 @@ async function loadContext(db: Db, profile: Profile) {
     events: events.data ?? [],
     providers: providers.data ?? [],
     history: (history.data ?? []).reverse(),
+    /** Whether this user may change Beni-created Google events (verified owner of the linked calendar). */
+    googleEditable: false,
   };
 }
 
@@ -136,6 +145,9 @@ function contextText(profile: Profile, ctx: Ctx, pending: PendingAction | null):
       .filter((v) => v.confirmed)
       .map((v) => ({ date: v.visit_date, benefit_id: v.benefit_id })),
     calendar: ctx.events.map((e) => ({
+      id: e.id,
+      in_google: ctx.googleEditable && isEditableBeniGoogleEvent(e),
+      ends_at: e.ends_at,
       title: e.title,
       starts_at: e.starts_at,
       kind: e.kind,
@@ -166,7 +178,82 @@ function toMessages(ctx: Ctx, text: string): Anthropic.Beta.BetaMessageParam[] {
 function tools(profile: Profile, ctx: Ctx) {
   const userId = profile.id;
   const benefitIds = new Set(ctx.benefits.map((b) => b.id));
+  const editable = (id: string) =>
+    ctx.googleEditable
+      ? ctx.events.find((e) => e.id === id && isEditableBeniGoogleEvent(e))
+      : undefined;
+  const googleTools = ctx.googleEditable
+    ? [
+        betaZodTool({
+          name: "propose_google_event_change",
+          description:
+            "Stage a change to a calendar entry marked in_google: true (move it, or edit its title, location or notes). Nothing changes until the user replies yes. Only include fields that change.",
+          inputSchema: z.object({
+            event_id: z.string().describe("id of the calendar entry from context"),
+            title: z.string().nullable().describe("new title, or null to keep"),
+            starts_at: z
+              .string()
+              .nullable()
+              .describe("new ISO 8601 start with timezone offset, or null to keep"),
+            ends_at: z
+              .string()
+              .nullable()
+              .describe("new ISO 8601 end, or null to keep the current duration"),
+            location: z.string().nullable().describe("new location, or null to keep"),
+            notes: z.string().nullable().describe("new notes, or null to keep"),
+          }),
+          run: async (a) => {
+            const event = editable(a.event_id);
+            if (!event)
+              return "that entry can't be changed: only entries marked in_google can be. tell the user.";
+            const changes: Extract<PendingAction, { type: "google_event_update" }>["changes"] = {};
+            if (a.title) changes.title = a.title;
+            if (a.starts_at) changes.starts_at = a.starts_at;
+            if (a.ends_at) changes.ends_at = a.ends_at;
+            if (a.location) changes.location = a.location;
+            if (a.notes) changes.notes = a.notes;
+            const built = googleEventPatch(event, changes);
+            if (!built.ok)
+              return `can't stage this change: ${built.error.toLowerCase()} ask the user to clarify.`;
+            const ok = await setPendingAction(userId, {
+              type: "google_event_update",
+              event_id: event.id,
+              title_before: event.title,
+              changes: built.local,
+              created_at: new Date().toISOString(),
+            });
+            return ok
+              ? "staged. now ask the user to reply yes to update it in their google calendar, or no to leave it."
+              : "could not stage the change; tell the user to edit it on the calendar page.";
+          },
+        }),
+        betaZodTool({
+          name: "propose_google_event_delete",
+          description:
+            "Stage deleting a calendar entry marked in_google: true from google calendar and beni. Nothing changes until the user replies yes.",
+          inputSchema: z.object({
+            event_id: z.string().describe("id of the calendar entry from context"),
+          }),
+          run: async (a) => {
+            const event = editable(a.event_id);
+            if (!event)
+              return "that entry can't be deleted: only entries marked in_google can be. tell the user.";
+            const ok = await setPendingAction(userId, {
+              type: "google_event_delete",
+              event_id: event.id,
+              title: event.title,
+              starts_at: event.starts_at,
+              created_at: new Date().toISOString(),
+            });
+            return ok
+              ? "staged. now ask the user to reply yes to delete it from google calendar and beni, or no to keep it."
+              : "could not stage the deletion; tell the user to delete it on the calendar page.";
+          },
+        }),
+      ]
+    : [];
   return [
+    ...googleTools,
     betaZodTool({
       name: "propose_calendar_hold",
       description:
@@ -259,10 +346,33 @@ async function resolvePending(
   if (answer === "no")
     return pending.type === "visit_log"
       ? "no problem — i won’t log anything. 🌱"
-      : "no problem, i won’t add it. want to look at another time?";
+      : pending.type === "calendar_hold"
+        ? "no problem, i won’t add it. want to look at another time?"
+        : "okay, i’ll leave it as it is. 🌱";
+  const tz = profile.timezone || "America/Los_Angeles";
+  if (pending.type === "google_event_update") {
+    try {
+      const r = await updateBeniGoogleEvent(profile.id, pending.event_id, pending.changes);
+      return pending.changes.starts_at
+        ? `done! ${r.title} is now ${describeDate(r.starts_at, tz)} in your google calendar. this doesn’t change anything with the provider, so let them know too.`
+        : `done! i updated ${r.title} in your google calendar.`;
+    } catch (e) {
+      console.error("[agent] google update failed", e);
+      return "sorry, i couldn’t update that in google calendar. try again in a bit, or edit it on your calendar page.";
+    }
+  }
+  if (pending.type === "google_event_delete") {
+    try {
+      await deleteBeniGoogleEvent(profile.id, pending.event_id);
+      return `done, i removed ${pending.title} from your google calendar and beni. if it was booked with a provider, remember to cancel with them too.`;
+    } catch (e) {
+      console.error("[agent] google delete failed", e);
+      return "sorry, i couldn’t delete that from google calendar. try again in a bit, or remove it on your calendar page.";
+    }
+  }
   if (pending.type === "calendar_hold") {
     await createCalendarHold(profile.id, pending);
-    return `done! i added a tentative hold for ${pending.title} on ${describeDate(pending.starts_at, profile.timezone || "America/Los_Angeles")}. it’s not booked until the provider confirms — you can see it on your calendar.`;
+    return `done! i added a tentative hold for ${pending.title} on ${describeDate(pending.starts_at, tz)}. it’s not booked until the provider confirms — you can see it on your calendar.`;
   }
   await logConfirmedVisit(profile.id, pending);
   return "perfect! i’ve logged it in your benefits tracker. ✨";
@@ -316,10 +426,12 @@ export async function handleIncoming(opts: {
 }): Promise<string> {
   const { profile, text, channel } = opts;
   const db = await admin();
-  const [ctx, pending] = await Promise.all([
+  const [ctx, pending, owner] = await Promise.all([
     loadContext(db, profile),
     getPendingAction(profile.id),
+    isLinkedOwner(profile.id).catch(() => false),
   ]);
+  ctx.googleEditable = owner;
   await recordMessage({
     userId: profile.id,
     direction: "incoming",

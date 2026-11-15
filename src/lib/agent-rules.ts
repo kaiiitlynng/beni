@@ -157,6 +157,27 @@ export type PendingAction =
       visit_date: string;
       label: string;
       created_at: string;
+    }
+  | {
+      /** Change to a Google event Beni exported; `event_id` is the calendar_events row id. */
+      type: "google_event_update";
+      event_id: string;
+      title_before: string;
+      changes: {
+        title?: string | undefined;
+        starts_at?: string | undefined;
+        ends_at?: string | null | undefined;
+        location?: string | null | undefined;
+        notes?: string | null | undefined;
+      };
+      created_at: string;
+    }
+  | {
+      type: "google_event_delete";
+      event_id: string;
+      title: string;
+      starts_at: string;
+      created_at: string;
     };
 
 /** A proposal only waits a day for its yes/no. */
