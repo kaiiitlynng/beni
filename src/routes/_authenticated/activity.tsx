@@ -93,7 +93,7 @@ function ActivityPage() {
         <section className="mt-12 border-t border-border pt-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
             <h2 className="text-3xl">Upcoming reminders</h2>
-            <Button asChild variant="outline" size="sm"><Link to="/settings">Manage reminders</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/settings" search={{ tab: 'notifications' }}>Manage reminders</Link></Button>
           </div>
           {upcomingReminders.length ? (
             <ul className="space-y-3">

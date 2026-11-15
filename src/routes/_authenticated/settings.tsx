@@ -19,6 +19,7 @@ import { editableProfileUpdate } from '@/lib/profile-updates';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => pageHead('your preferences', 'Manage your personal information, notifications, documents, connections and privacy.'),
+  validateSearch: (s: Record<string, unknown>): { tab?: string } => (typeof s['tab'] === 'string' ? { tab: s['tab'] } : {}),
   loader: ({ context }) => context.queryClient.ensureQueryData(hubQuery),
   component: Settings,
 });
@@ -49,7 +50,8 @@ const TIMEZONES = ['America/Los_Angeles', 'America/Denver', 'America/Chicago', '
 function Settings() {
   const { data } = useSuspenseQuery(hubQuery);
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>('personal');
+  const initialTab = Route.useSearch().tab;
+  const [tab, setTab] = useState<Tab>(initialTab === 'notifications' ? 'notifications' : 'personal');
   const [busy, setBusy] = useState(false);
 
   const p = data.profile;
