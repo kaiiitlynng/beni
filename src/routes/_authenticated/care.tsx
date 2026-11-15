@@ -66,7 +66,7 @@ function CarePage() {
                     <p className="text-sm">{e.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {fmtDate(e.starts_at)} · {fmtTime(e.starts_at)}
-                      {e.location ? ` · ${e.location}` : ''} · {isHold(e) ? 'tentative hold — not booked' : 'confirmed'}
+                      {e.location ? ` · ${e.location}` : ''} · {isHold(e) ? 'tentative hold — not booked' : e.status === 'provider_confirmed' ? 'provider-confirmed' : 'confirmed in beni'}
                     </p>
                   </div>
                 </div>
