@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { MessageCircle, Bell, Sparkles, CalendarDays, CheckCircle2 } from 'lucide-react';
 import { AuthedShell } from '@/components/beni/authed-shell';
+import { TextBeni } from '@/components/beni/text-beni';
 import { Button } from '@/components/ui/button';
 import { hubQuery } from '@/lib/hub-query';
 import { pageHead } from '@/lib/beni';
@@ -14,7 +15,7 @@ export const Route = createFileRoute('/_authenticated/activity')({
   component: ActivityPage,
 });
 
-type Item = { key: string; at: string; icon: ReactNode; label: string; text: string };
+type Item = { key: string; at: string; icon: ReactNode; label: string; text: string; action?: { label: string; to: '/benefits' | '/calendar' | '/settings' } };
 
 function ActivityPage() {
   const { data } = useSuspenseQuery(hubQuery);
@@ -42,6 +43,7 @@ function ActivityPage() {
         icon: <Sparkles size={16} />,
         label: 'benefit recommendation',
         text: `${b.name} — documented on page ${b.source_page} of your plan.`,
+        action: { label: 'View benefit', to: '/benefits' as const },
       })),
     ...data.events.map((e) => ({
       key: `e-${e.id}`,
@@ -49,6 +51,7 @@ function ActivityPage() {
       icon: <CalendarDays size={16} />,
       label: isHold(e) ? 'tentative calendar hold' : 'appointment',
       text: `${e.title} · ${fmtDate(e.starts_at)}${isHold(e) ? ' (not booked)' : ''}`,
+      action: { label: 'View appointment', to: '/calendar' as const },
     })),
     ...data.visits.map((v) => ({
       key: `v-${v.id}`,
@@ -60,6 +63,7 @@ function ActivityPage() {
   ].sort((a, b) => b.at.localeCompare(a.at));
 
   const conversation = data.messages.slice(-6);
+  const upcomingReminders = data.reminders.filter((r) => r.status !== 'done').sort((a, b) => (a.remind_at ?? '9').localeCompare(b.remind_at ?? '9')).slice(0, 5);
 
   return (
     <AuthedShell>
@@ -71,9 +75,7 @@ function ActivityPage() {
         <section className="mt-12 border border-border bg-card rounded-2xl p-6">
           <div className="flex items-center justify-between gap-4 mb-5">
             <h2 className="text-3xl">your conversation.</h2>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/demo">open demo</Link>
-            </Button>
+            <TextBeni number={data.beniNumber} />
           </div>
           {conversation.length ? (
             <div className="space-y-3">
@@ -84,11 +86,28 @@ function ActivityPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">no messages yet. once texting is connected, your conversation with beni previews here — the full conversation stays in your texts.</p>
+            <p className="text-sm text-muted-foreground">no messages yet. text Beni to start a conversation; it previews here — the full conversation stays in your texts.</p>
+          )}
+        </section>
+
+        <section className="mt-12 border-t border-border pt-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+            <h2 className="text-3xl">Upcoming reminders</h2>
+            <Button asChild variant="outline" size="sm"><Link to="/settings">Manage reminders</Link></Button>
+          </div>
+          {upcomingReminders.length ? (
+            <ul className="space-y-3">
+              {upcomingReminders.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 text-sm"><Bell size={15} className="text-muted-foreground" />{r.title}{r.remind_at && <span className="text-xs text-muted-foreground">· {fmtDate(r.remind_at)} {fmtTime(r.remind_at)}</span>}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No upcoming reminders. Add one from a benefit or when you save an appointment.</p>
           )}
         </section>
 
         {/* Chronological feed */}
+        <section className="mt-12"><h2 className="text-3xl mb-6">Timeline</h2></section>
         <section className="mt-12">
           {items.length ? (
             <div className="border-l border-border pl-6 space-y-7">
@@ -97,7 +116,8 @@ function ActivityPage() {
                   <span className="absolute -left-[31px] top-0.5 bg-background border border-border rounded-full p-1.5 text-muted-foreground">{i.icon}</span>
                   <p className="text-xs text-muted-foreground">{i.label}</p>
                   <p className="text-sm mt-1">{i.text}</p>
-                  {i.at.includes('T') && <p className="text-xs text-muted-foreground mt-1">{fmtTime(i.at)}</p>}
+                  {i.at.includes('T') && <p className="text-xs text-muted-foreground mt-1">{fmtDate(i.at)} · {fmtTime(i.at)}</p>}
+                  {i.action && <Button asChild variant="link" size="sm" className="px-0 h-auto mt-1"><Link to={i.action.to}>{i.action.label}</Link></Button>}
                 </div>
               ))}
             </div>
