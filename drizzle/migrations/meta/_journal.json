@@ -36,6 +36,13 @@
       "when": 1794701762987,
       "tag": "0004_recurring_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794702644629,
+      "tag": "0005_protected_profile_pending_action",
+      "breakpoints": true
     }
   ]
 }

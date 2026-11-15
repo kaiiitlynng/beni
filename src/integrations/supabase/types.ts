@@ -374,6 +374,7 @@ export type Database = {
           notify_sms: boolean
           onboarding_complete: boolean
           organization: string
+          pending_action: Json | null
           phone: string
           reminder_frequency: string
           reminder_preferences: string[]
@@ -399,6 +400,7 @@ export type Database = {
           notify_sms?: boolean
           onboarding_complete?: boolean
           organization?: string
+          pending_action?: Json | null
           phone?: string
           reminder_frequency?: string
           reminder_preferences?: string[]
@@ -424,6 +426,7 @@ export type Database = {
           notify_sms?: boolean
           onboarding_complete?: boolean
           organization?: string
+          pending_action?: Json | null
           phone?: string
           reminder_frequency?: string
           reminder_preferences?: string[]
