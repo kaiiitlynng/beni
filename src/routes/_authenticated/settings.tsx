@@ -1,6 +1,7 @@
 import { fmtDate } from '@/lib/hub';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import { RemindersManager } from '@/components/beni/reminders-manager';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { User, Bell, FileText, Plug, ShieldCheck, CalendarDays, MessageCircle } from 'lucide-react';
 import { AuthedShell } from '@/components/beni/authed-shell';
@@ -188,6 +189,7 @@ function Settings() {
             </Button>
           </form>
         )}
+        {tab === 'notifications' && <div className="mt-10"><RemindersManager reminders={data.reminders} benefits={data.benefits} /></div>}
 
         {tab === 'documents' && (
           <section className="space-y-8">

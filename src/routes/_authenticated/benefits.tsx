@@ -10,27 +10,17 @@ import { pageHead, confirmedUsage } from '@/lib/beni';
 import { CATEGORIES, coverageTone } from '@/lib/hub';
 import type { Tables } from '@/integrations/supabase/types';
 import { activeInsurance } from '@/lib/insurance-rules';
-import { useQueryClient } from '@tanstack/react-query';
-import { addReminder } from '@/lib/benefits.functions';
-import { toast } from 'sonner';
+import { ReminderDialog } from '@/components/beni/reminders-manager';
 import { CalendarPlus, Bell } from 'lucide-react';
 
 function BenefitActions({ benefit }: { benefit: Tables<'benefits'> }) {
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  async function remind() {
-    setBusy(true);
-    try {
-      const at = new Date(Date.now() + 7 * 86400000); at.setHours(10, 0, 0, 0);
-      await addReminder({ data: { title: `Schedule ${benefit.name.toLowerCase()}`, remind_at: at.toISOString() } });
-      toast.success(`Reminder set for ${at.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.`);
-      await qc.invalidateQueries({ queryKey: ['beni-hub'] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : 'Please try again.'); } finally { setBusy(false); }
-  }
+  const [open, setOpen] = useState(false);
+  const { data } = useSuspenseQuery(hubQuery);
   return (
     <div className="flex flex-wrap gap-3 mt-6">
       <Button asChild><Link to="/calendar" search={{ benefit: benefit.id }}><CalendarPlus size={16} />Find time for this</Link></Button>
-      <Button variant="outline" disabled={busy} onClick={remind}><Bell size={16} />Remind me to use this</Button>
+      <Button variant="outline" onClick={() => setOpen(true)}><Bell size={16} />Remind me to use this</Button>
+      {open && <ReminderDialog benefits={data.benefits} benefitId={benefit.id} onClose={() => setOpen(false)} />}
     </div>
   );
 }
